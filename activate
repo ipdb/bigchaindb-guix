@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+THIS_REPO=$(dirname "$0")
+ENV_HOME=$THIS_REPO/.genv
+ENV_USER=$(basename $THIS_REPO)
+mkdir -p $ENV_HOME
+
+# Modify the '--ad-hoc' line add useful packages.
+# e.g.
+#    --ad-hoc coreutils guile grep which \
+
+guix environment \
+     --ad-hoc \
+     --load=guix.scm \
+     --container \
+     --user=$ENV_USER \
+     --share=$ENV_HOME=/home/$ENV_USER \
+     --network

@@ -1,0 +1,10 @@
+# -*- mode: org -*-
+
+* Roadmap for v1.0
+** TODO Add Tendermint initialization staging mechanism.
+** TODO Write docs.
+** TODO Containerize package for non-guix systems.
+** TODO Make deployment easy for non schemers.
+** TODO Build Tendermint from source.
+** TODO Make use of `guix deploy`.
+** TODO Add cuirass build jobs.

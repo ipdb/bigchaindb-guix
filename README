@@ -1,0 +1,51 @@
+# -*- mode: org -*-
+
+*BigchainDB Guix* -- BigchainDB deployment using GNU Guix - Functional package
+management for GNU and Guile, Project GNU's extension language.
+
+* Requirements
+
+Runtime requirements:
+- GNU Guile 3.0
+- GNU Guix
+- Guile-JSON
+- guile-gcrypt
+- libsodium
+
+Build requirements:
+- GNU automake
+- GNU autoconf
+- GNU libtool
+- GNU Texinfo
+- pkg-config
+
+
+* System installation
+
+#+begin_src sh
+./configure && sudo make install
+#+end_src
+
+If you are using git distribution of bigchaindb-guix you will also need to run
+*./bootstrap* prior to steps above.
+
+
+* Installation with guix
+
+#+begin_src sh
+guix package -f guix.scm
+#+end_src
+
+Or you can jump straight into profile container environment with *activate*
+script.
+
+
+* Running test BigchainDB node
+
+#+begin_src sh
+guix system vm system.scm
+#+end_src
+
+
+* Footnote
+Checkout [[file:ROADMAP][ROADMAP]] for upcoming features!
