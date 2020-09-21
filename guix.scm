@@ -16,7 +16,9 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with bigchaindb-guix.  If not, see <http://www.gnu.org/licenses/>.
 
-(use-modules (guix gexp)
+(use-modules ((guix licenses) #:prefix license:)
+             (guix build-system gnu)
+             (guix gexp)
              (guix packages)
              (guix utils)
              (ice-9 popen)
@@ -47,12 +49,40 @@
                     (format #f "guix hash -r ~a" %srcdir)))
    0 7))
 
-(define bigchaindb-guix-local
+(define-public bigchaindb-guix-local
   (package
-   (inherit bigchaindb-guix)
-   (version (guix-hash))
-   (source (local-file %srcdir
+    (name "bigchaindb-guix-local")
+    (version (guix-hash))
+    (source (local-file %srcdir
                        #:recursive? #t
-                       #:select? keep-file?))))
+                       #:select? keep-file?))
+    (build-system gnu-build-system)
+    (arguments
+     '(#:phases
+       (modify-phases %standard-phases
+         (add-after 'check 'pathch-load-extension-dirs
+           (lambda* (#:key outputs #:allow-other-keys)
+             (substitute* "bigchaindb-guix/deployment/tendermint-init.scm"
+               (("libtendermintinit")
+                (format #f
+                        "~a/lib/guile/3.0/extensions/libtendermintinit"
+                        (assoc-ref outputs "out"))))
+             #t)))))
+    (native-inputs
+     `(("autoconf" ,autoconf)
+       ("automake" ,automake)
+       ("pkg-config" ,pkg-config)
+       ("texinfo" ,texinfo)
+       ("libtool" ,libtool)
+       ("guile3.0-guix" ,guile3.0-guix)
+       ("guile-json" ,guile-json)
+       ("libsodium" ,libsodium)))
+    (inputs
+     `(("guile" ,guile-3.0)
+       ("libsodium" ,libsodium)))
+    (synopsis "")
+    (description "")
+    (home-page "")
+    (license license:gpl3+)))
 
 bigchaindb-guix-local

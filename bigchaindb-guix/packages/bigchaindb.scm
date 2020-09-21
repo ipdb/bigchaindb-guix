@@ -294,48 +294,4 @@ from your child processes as well!")
     (description "BigchainDB: The Blockchain Database")
     (license license:asl2.0)))
 
-(define-public bigchaindb-guix
-  (package
-    (name "bigchaindb-guix")
-    ;; NOTE not released yet
-    (version "XXX")
-    (source (origin
-              (method git-fetch)
-              (uri (git-reference
-                    (url "https://github.com/ipdb/bigchaindb-guix.git")
-                    (commit (string-append "v" version))))
-              (file-name (git-file-name name version))
-              (sha256
-               (base32
-                ;; NOTE not released yet
-                "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"))))
-    (build-system gnu-build-system)
-    (arguments
-     '(#:phases
-       (modify-phases %standard-phases
-         (add-after 'check 'pathch-load-extension-dirs
-           (lambda* (#:key outputs #:allow-other-keys)
-             (substitute* "bigchaindb-guix/deployment/tendermint-init.scm"
-               (("libtendermintinit")
-                (format #f
-                        "~a/lib/guile/3.0/extensions/libtendermintinit"
-                        (assoc-ref outputs "out"))))
-             #t)))))
 
-    (native-inputs
-     `(("autoconf" ,autoconf)
-       ("automake" ,automake)
-       ("pkg-config" ,pkg-config)
-       ("texinfo" ,texinfo)
-       ("libtool" ,libtool)
-       ("guile3.0-guix" ,guile3.0-guix)
-       ("guile-json" ,guile-json)
-       ("libsodium" ,libsodium)))
-    (inputs
-     `(("guile" ,guile-3.0)
-       ("libsodium" ,libsodium)))
-    (synopsis "")
-    (description "")
-    (home-page "")
-    (license license:gpl3+)))
- 
