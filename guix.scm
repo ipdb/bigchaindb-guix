@@ -39,13 +39,18 @@
                      "git ls-tree --full-tree -r HEAD --name-only"))
     #\newline)))
 
+(define (guix-hash)
+  (substring
+   (get-string-all (open-input-pipe
+                    (format #f "guix hash -r ~a" %srcdir)))
+   0 7))
+
 (define bigchaindb-guix-local
   (package
-    (inherit bigchaindb-guix)
-    ;; TODO make version the directory hash instead of current time
-    (version (number->string (current-time)))
-    (source (local-file (current-source-directory)
-                        #:recursive? #t
-                        #:select? keep-file?))))
+   (inherit bigchaindb-guix)
+   (version (guix-hash))
+   (source (local-file %srcdir
+                       #:recursive? #t
+                       #:select? keep-file?))))
 
 bigchaindb-guix-local
