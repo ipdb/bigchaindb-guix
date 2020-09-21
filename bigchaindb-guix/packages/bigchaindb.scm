@@ -4,7 +4,6 @@
 ;; Copyright © 2020 David Dashyan <mail@davie.li>
 ;; Copyright © 2019, 2020 Ricardo Wurmus <rekado@elephly.net>
 ;; Copyright © 2019, 2020 Marius Bakke <mbakke@fastmail.com>
-;; Thanks to Marius Bakke and Ricardo Wurmus for the python-gevent package declaration.
 ;;
 ;; This file is part of bigchaindb-guix
 ;;
@@ -43,31 +42,6 @@
   #:use-module (guix download)
   #:use-module (guix git-download)
   #:use-module (guix packages))
-
-(define-public python-colorlog
-  (package
-    (name "python-colorlog")
-    (version "4.0.2")
-    (source
-     (origin
-       (method url-fetch)
-       (uri (pypi-uri "colorlog" version))
-       (sha256
-        (base32
-         "0hlv7x4qnb4jmccyv12087m0v5a0p3rjwn7g3z06xy68rcjipwrw"))))
-    (build-system python-build-system)
-    (arguments
-     ;; FIXME: Tests fail
-     '(#:tests? #f))
-    ;; Python-colorama required on win32 systems only.
-    ;; (propagated-inputs
-    ;;  `(("python-colorama" ,python-colorama)))
-    (home-page
-     "https://github.com/borntyping/python-colorlog")
-    (synopsis "Log formatting with colors!")
-    (description "colorlog.ColoredFormatter is a formatter for use with Python's
-logging module that outputs records using terminal colors.")
-    (license license:expat)))
 
 ;; ~v2.3 required by cryptoconditions
 (define-public python-cryptography-2.3
@@ -129,121 +103,6 @@ logging module that outputs records using terminal colors.")
 file before tests run.")
     (license license:expat)))
 
-(define-public python-gevent-1.3
-  (package
-    (inherit python-gevent)
-    (name "python-gevent")
-    (version "1.3.7")
-    (source (origin
-              (method url-fetch)
-              (uri (pypi-uri "gevent" version))
-              (sha256
-               (base32
-                "0b0fr04qdk1p4sniv87fh8z5psac60x01pv054kpgi94520g81iz"))
-              (modules '((guix build utils)))
-              (snippet
-               '(begin
-                  ;; unbunding libev and c-ares
-                  (delete-file-recursively "deps")
-                  #t))))
-    (arguments
-     `(#:modules ((ice-9 ftw)
-                  (ice-9 match)
-                  (srfi srfi-26)
-                  (guix build utils)
-                  (guix build python-build-system))
-       #:phases (modify-phases %standard-phases
-                  (add-before 'patch-source-shebangs 'patch-hard-coded-paths
-                    (lambda _
-                      (substitute* "src/gevent/subprocess.py"
-                        (("/bin/sh") (which "sh")))
-                      (for-each (lambda (file)
-                                  (substitute* file
-                                    (("/bin/sh") (which "sh"))
-                                    (("/bin/true") (which "true"))))
-                                (find-files "src/greentest" "\\.py$"))
-                      #t))
-                  (add-before 'build 'do-not-use-bundled-sources
-                    (lambda _
-                      (setenv "GEVENTSETUP_EMBED" "0")
-
-                      ;; Prevent building bundled libev.
-                      (substitute* "setup.py"
-                        (("run_make=_BUILDING")
-                         "run_make=False"))
-                      #t))
-                  (add-before 'build 'add-greenlet-on-C_INCLUDE_PATH
-                    (lambda* (#:key inputs #:allow-other-keys)
-                      (let ((greenlet (string-append
-                                       (assoc-ref inputs "python-greenlet")
-                                       "/include")))
-                        (match (scandir greenlet
-                                        (lambda (item)
-                                          (string-prefix? "python" item)))
-                          ((python)
-                           (setenv "C_INCLUDE_PATH"
-                                   (string-append greenlet "/" python ":"
-                                                  (or (getenv "C_INCLUDE_PATH")
-                                                      ""))))))
-                      #t))
-                  (add-before 'check 'pretend-to-be-CI
-                    (lambda _
-                      ;; A few tests are skipped due to network constraints or
-                      ;; get longer timeouts when running in a CI environment.
-                      ;; Piggy-back on that, as we need the same adjustments.
-                      (setenv "TRAVIS" "1")
-                      (setenv "APPVEYOR" "1")
-                      #t))
-                  (add-before 'check 'adjust-tests
-                    (lambda _
-                      (let ((disabled-tests
-                             '(;; These tests rely on networking which is not
-                               ;; available in the build container.
-                               "test_urllib2net.py"
-                               "test__server.py"
-                               "test__server_pywsgi.py"
-                               "test_socket.py"
-                               "test__socket.py"
-                               "test__socket_ssl.py"
-                               "test__socket_dns.py"
-                               "test__socket_dns6.py"
-                               "test___example_servers.py"
-                               "test__getaddrinfo_import.py"
-                               "test__examples.py"
-                               "test_httplib.py"
-                               "test_https.py"
-                               "test_urllib2_localnet.py"
-                               "test_ssl.py"
-                               "test__ssl.py"
-                               ;; XXX: These tests borrow functionality from the
-                               ;; Python builtin 'test' module, but it is not
-                               ;; installed with the Guix Python distribution.
-                               "test_smtpd.py"
-                               "test_wsgiref.py"
-                               "test_urllib2.py"
-                               "test_thread.py"
-                               "test_threading.py"
-                               "test__threading_2.py"
-                               ;; These tests rely on KeyboardInterrupts which do not
-                               ;; work inside the build container for some reason
-                               ;; (lack of controlling terminal?).
-                               "test_subprocess.py"
-                               "test__issues461_471.py"
-                               ;; TODO: Patch out the tests that use getprotobyname, etc
-                               ;; instead of disabling all the tests from these files.
-                               "test__resolver_dnspython.py"
-                               "test__doctests.py"
-                               "test__all__.py"
-                               "test___config.py"
-                               "test__execmodules.py")))
-                        (call-with-output-file "skipped_tests.txt"
-                          (lambda (port)
-                            (format port "~a~%"
-                                    (string-join disabled-tests "\n"))))
-                        #t)))
-                  (replace 'check
-                    (lambda _ #t)))))))
-
 (define-public python-bigchaindb-abci
   (package
     (name "python-bigchaindb-abci")
@@ -261,7 +120,7 @@ file before tests run.")
      '(#:tests? #f))
     (propagated-inputs
      `(("python-colorlog" ,python-colorlog)
-       ("python-gevent-1.3" ,python-gevent-1.3)
+       ("python-gevent" ,python-gevent)
        ("python-protobuf-3.6" ,python-protobuf-3.6)
        ("python-pytest" ,python-pytest)
        ("python-pytest-cov" ,python-pytest-cov)
@@ -374,74 +233,18 @@ requests, and please make sure you add some sort of CSRF protection before doing
 so!")
     (license license:expat)))
 
-
-(define-public python-gunicorn
-  (package
-    (name "python-gunicorn")
-    ;; NOTE: new version available
-    (version "19.9.0")
-    (source
-     (origin
-       (method url-fetch)
-       (uri (pypi-uri "gunicorn" version))
-       (sha256
-        (base32
-         "1wzlf4xmn6qjirh5w81l6i6kqjnab1n1qqkh7zsj1yb6gh4n49ps"))))
-  (build-system python-build-system)
-  (propagated-inputs
-   `(("python-setuptools" ,python-setuptools)))
-  ;; XXX Package has defined docs requirements and extras
-  ;; extras_require = {
-  ;;     'gevent':  ['gevent>=0.13'],
-  ;;     'eventlet': ['eventlet>=0.9.7'],
-  ;;     'tornado': ['tornado>=0.2'],
-  ;;     'gthread': [],
-  ;;     'setproctitle': ['setproctitle'],
-  ;; }
-  (arguments
-   ;; FIXME: Tests require unpackaged inputs
-   '(#:tests? #f))
-  (home-page "http://gunicorn.org")
-  (synopsis "WSGI HTTP Server for UNIX")
-  (description "WSGI HTTP Server for UNIX")
-  (license license:expat)))
-
-(define-public python-jsonschema-2.5
-  ;; NOTE New version is available
-  (package
-    (name "python-jsonschema-2.5")
-    (version "2.5.1")
-    (source (origin
-              (method url-fetch)
-              (uri (pypi-uri "jsonschema" version))
-              (sha256
-               (base32
-                "0hddbqjm4jq63y8jf44nswina1crjs16l9snb6m3vvgyg31klrrn"))))
-    (build-system python-build-system)
-    (arguments
-     ;; FIXME: Tests fail
-     '(#:tests? #f))
-    (native-inputs
-     `(("python-vcversioner" ,python-vcversioner)))
-    ;; NOTE: has extra requerements
-    (home-page "https://github.com/Julian/jsonschema")
-    (synopsis "Implementation of JSON Schema for Python")
-    (description
-     "Jsonschema is an implementation of JSON Schema for Python.")
-    (license license:expat)))
-
 (define-public python-logstats
   ;; NOTE New version is available
   (package
     (name "python-logstats")
-    (version "0.2.1")
+    (version "0.3.0")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "logstats" version))
        (sha256
         (base32
-         "02b7bk99023j1bgs1as7qmndcwknxmq3m3lvhs7kqnqg2pkp34m1"))))
+         "1f0rls1l81bwqxh9ncjfx1c7dy5k4gdkr6qrn0kqfrdgddpdwrs1"))))
     (build-system python-build-system)
     (home-page "https://github.com/vrde/logstats")
     (synopsis
@@ -453,105 +256,20 @@ now and then. It supports the multiprocessing modules, so you can collect stats
 from your child processes as well!")
     (license license:expat)))
 
-(define-public python-packaging-18.0
-  ;; NOTE New version is available
-  (package
-    (inherit python-packaging)
-    (name "python-packaging-18.0")
-    (version "18.0")
-    (source
-     (origin
-       (method url-fetch)
-       (uri (pypi-uri "packaging" version))
-       (sha256
-        (base32
-         "01wq9c53ix5rz6qg2c98gy8n4ff768rmanifm8m5jpjiaizj51h8"))))))
-
-(define-public python-pymongo-3.6
-  ;; NOTE New version is available
-  (package
-    (inherit python-pymongo)
-    (name "python-pymongo-3.6")
-    (version "3.6.1")
-    (source (origin
-              (method url-fetch)
-              (uri (pypi-uri "pymongo" version))
-              (sha256
-               (base32
-                "15j7jxbag863axwqghb3ms1wkadyi5503ndj9lvl1vk2d62cpszp"))))))
-
-(define-public python-pyyaml-5.1
-  ;; NOTE This package definition supersedes guix's one.
-  (package
-    (name "python-pyyaml")
-    (version "5.1.2")
-    (source
-     (origin
-       (method url-fetch)
-       (uri (pypi-uri "PyYAML" version))
-       (sha256
-        (base32
-         "1r5faspz73477hlbjgilw05xsms0glmsa371yqdd26znqsvg1b81"))))
-    (build-system python-build-system)
-    (inputs
-     `(("libyaml" ,libyaml)))
-    (home-page "http://pyyaml.org/wiki/PyYAML")
-    (synopsis "YAML parser and emitter for Python")
-    (description
-     "PyYAML is a YAML parser and emitter for Python. PyYAML features a complete
-YAML 1.1 parser, Unicode support, pickle support, capable extension API, and
-sensible error messages. PyYAML supports standard YAML tags and provides
-Python-specific tags that allow to represent an arbitrary Python object.")
-    (license license:expat)))
-
-(define-public python-rapidjson
-  (package
-    (name "python-rapidjson")
-    (version "0.6.3")
-    (source
-     (origin
-       (method url-fetch)
-       (uri (pypi-uri "python-rapidjson" version))
-       (sha256
-        (base32
-         "11d0bld459pxly56c54q6br83qcqsd8likiq0rn2pgnr273jjxqa"))))
-    ;; NOTE: There is rapidjson package in guix repo which is actually a
-    ;; submodule of git repo of this wrapper. It maight be possible to include
-    ;; it as input.
-    (build-system python-build-system)
-    (home-page
-     "https://github.com/python-rapidjson/python-rapidjson")
-    (synopsis "Python wrapper around rapidjson")
-    (description "RapidJSON is an extremely fast C++ JSON parser and
-serialization library: this module wraps it into a Python 3 extension, exposing
-its serialization/deserialization (to/from either bytes, str or file-like
-instances) and JSON Schema validation capabilities.")
-    (license license:expat)))
-
 (define-public bigchaindb
   (package
     (name "bigchaindb")
-    (version "2.2.1")
+    (version "2.2.2")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "BigchainDB" version))
        (sha256
         (base32
-         "09aqc7iv89w9gjlakdi5zcv2g5lsq054xar8pj6qlv3zvjx6ddh3"))))
+         "0r2xd0x9bph49zjbppiv6f9wjb9ahcki2imlh2cvdb3lnvn5j76f"))))
     (build-system python-build-system)
     (arguments
-     `(#:phases
-       (modify-phases %standard-phases
-         ;; XXX nasty hack. Need to provide flask or better release updated BigchaiDB
-         (add-after 'unpack 'patch
-           (lambda _
-             (substitute* "setup.py"
-               (("flask~=0.12.4")
-                "flask>=1.0.0"))
-             #t)))
-       ;; FIXME: Tests
-       #:tests? #f))
+     `(#:tests? #f)) ;; FIXME Tests
     (propagated-inputs
      ;; NOTE pysha3 is python < 3.6 dependency
      `(("python-aiohttp" ,python-aiohttp)
@@ -560,14 +278,14 @@ instances) and JSON Schema validation capabilities.")
        ("python-flask" ,python-flask)
        ("python-flask-cors" ,python-flask-cors)
        ("python-flask-restful" ,python-flask-restful)
-       ("python-gunicorn" ,python-gunicorn)
-       ("python-jsonschema-2.5" ,python-jsonschema-2.5)
+       ("gunicorn" ,gunicorn)
+       ("python-jsonschema" ,python-jsonschema)
        ("python-logstats" ,python-logstats)
-       ("python-packaging-18.0" ,python-packaging-18.0)
-       ("python-pymongo-3.6" ,python-pymongo-3.6)
-       ("python-pyyaml-5.1" ,python-pyyaml-5.1)
+       ("python-packaging" ,python-packaging)
+       ("python-pymongo" ,python-pymongo)
+       ("python-pyyaml" ,python-pyyaml)
        ("python-rapidjson" ,python-rapidjson)
-       ("python-requests-2.20" ,python-requests-2.20)
+       ("python-requests" ,python-requests)
        ("python-setproctitle" ,python-setproctitle)))
     (inputs
      `(("python-pytest-runner" ,python-pytest-runner)))
