@@ -188,6 +188,7 @@
 
             ;; Bigchaindb
             bigchaindb-service-type
+            bigchaindb-configuration
 
             ;; FIXME these are exported for testing only
             generate-tm-keypair
