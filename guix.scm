@@ -29,15 +29,17 @@
 (define %srcdir
   (current-source-directory))
 
+(define %gitignore
+  (filter
+   (lambda (x) (not (equal? x "")))
+   (string-split (get-string-all
+                  (open-input-pipe "git check-ignore *"))
+    #\newline)))
+
 (define (keep-file? file _)
   "Check whether FILE is in current git tree."
-  (any
-   (lambda (x)
-     (string-suffix? x file))
-   (string-split
-    (get-string-all (open-input-pipe
-                     "git ls-tree --full-tree -r HEAD --name-only"))
-    #\newline)))
+  (not (any (lambda (x) (string-suffix? x file))
+            %gitignore)))
 
 (define (guix-hash)
   (substring
