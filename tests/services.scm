@@ -17,7 +17,7 @@
 ;; along with bigchaindb-guix.  If not, see <http://www.gnu.org/licenses/>.
 
 (define-module (tests services)
-  #:use-module (bigchaindb-guix os services)
+  #:use-module (bigchaindb-guix services bigchaindb)
   #:use-module (gcrypt base64)
   #:use-module (gcrypt pk-crypto)
   #:use-module (ice-9 binary-ports)

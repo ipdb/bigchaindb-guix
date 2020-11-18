@@ -19,7 +19,7 @@
 ;; ??? tendermint records are generated from config.toml with elisp this
 ;; results in more than a hundred getter functions being exported. May be it's
 ;; bit too much.
-(define-module (bigchaindb-guix os services)
+(define-module (bigchaindb-guix services bigchaindb)
   #:use-module (gnu services)
   #:use-module (gnu system shadow)
   #:use-module (gnu packages admin)

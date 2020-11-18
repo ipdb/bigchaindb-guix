@@ -17,7 +17,7 @@
 ;; along with bigchaindb-guix.  If not, see <http://www.gnu.org/licenses/>.
 
 (define-module (bigchaindb-guix os node)
-  #:use-module (bigchaindb-guix os services)
+  #:use-module (bigchaindb-guix services bigchaindb)
   #:use-module (bigchaindb-guix packages bigchaindb)
   #:use-module (bigchaindb-guix packages tendermint)
   #:use-module (gnu packages certs)
