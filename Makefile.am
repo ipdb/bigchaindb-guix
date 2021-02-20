@@ -5,7 +5,7 @@
 # Parts of this automake recipe borrowed from: GNU Guix and from
 # Erik Edrosa <erik.edrosa@gmail.com> writings.
 #
-# Copyright (C) 2020 David Dashyan <mail@davie.li>
+# Copyright (C) 2020, 2021 David Dashyan <mail@davie.li>
 #
 # This file is part of bigchaindb-guix
 #
@@ -60,7 +60,8 @@ SOURCES =						\
   bigchaindb-guix/packages/tendermint.scm
 
 TESTS =						\
-	tests/services.scm
+  tests/services.scm				\
+  tests/cloud-init.scm
 
 TEST_EXTENSIONS = .scm
 
