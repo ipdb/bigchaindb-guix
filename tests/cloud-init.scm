@@ -1,5 +1,6 @@
 (define-module (tests cloud-init)
   #:use-module (bigchaindb-guix services cloud-init)
+  #:use-module (gnu services base)
   #:use-module (guix utils)
   #:use-module (ice-9 futures)
   #:use-module (ice-9 textual-ports)
@@ -51,5 +52,17 @@
     result)
   %metadata-scm)
 
+(test-equal
+    "Test digitalocean metadata to static-networking-configuration
+record conversion"
+  (let ((conversion-function (@@ (bigchaindb-guix services cloud-init)
+                                 metadata->static-networking-configuration)))
+    (conversion-function 'digitalocean %metadata-scm))
+  (list
+   (static-networking (interface "eth0")
+                      (ip "207.188.191.111")
+                      (netmask "255.255.240.0")
+                      (gateway "207.155.240.1")
+                      (name-servers '("67.207.67.2" "67.207.67.3")))))
 
 (test-end)

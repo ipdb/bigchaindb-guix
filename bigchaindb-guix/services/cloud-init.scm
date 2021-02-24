@@ -22,13 +22,14 @@
 ;; NOTE Experimental and only works with digitalocean at the moment.
 
 (define-module (bigchaindb-guix services cloud-init)
-  #:use-module (gnu services networking)
+  #:use-module (gnu services base)
   #:use-module (gnu services)
   #:use-module (guix gexp)
   #:use-module (guix records)
   #:use-module (ice-9 match)
   #:use-module (json)
   #:use-module (rnrs bytevectors)
+  #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-11)
   #:use-module (web client)
   #:use-module (web response)
@@ -68,3 +69,36 @@
     (if (eq? (response-code response) 200)
         (json-string->scm body)
         (throw 'metadata-query-error response))))
+
+(define (resolve-metadata-quiery-method provider)
+  (assoc-ref `((digitalocean . ,query-metadata)) provider))
+
+(define-record-type* <cloud-init-configuration>
+  cloud-inint-configuration make-cloud-init-configuration
+  cloud-init-configuration?
+  this-cloud-init-configuration
+  (provider cloud-init-configuration-provider
+            (default 'digitalocean))
+  (metadata-quiery-method cloud-init-configuration-metadata-quiery-method
+                          (thunked)
+                          (default (resolve-metadata-quiery-method
+                                    (cloud-init-configuration-provider
+                                     this-cloud-init-configuration)))))
+
+(define (metadata->static-networking-configuration provider metadata)
+  (let* ((interfaces   (assoc-ref (assoc-ref metadata "interfaces") "public"))
+         (name-servers (assoc-ref (assoc-ref metadata "dns") "nameservers"))
+         (make-static-networking-conf
+          (lambda (iface index)
+            (let ((ipv4-field  (assoc-ref iface "ipv4")))
+              (static-networking
+               (interface    (string-concatenate
+                              (list "eth" (number->string index))))
+               (ip           (assoc-ref ipv4-field "ip_address"))
+               (netmask      (assoc-ref ipv4-field "netmask"))
+               (gateway      (assoc-ref ipv4-field "gateway"))
+               (name-servers (vector->list name-servers)))))))
+    (map (lambda (x) (apply make-static-networking-conf x))
+         (zip (vector->list interfaces)
+              (iota (vector-length interfaces))))))
+
