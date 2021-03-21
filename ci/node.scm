@@ -1,0 +1,48 @@
+(use-modules (gnu services avahi)
+             (gnu services networking)
+             (gnu services cuirass)
+             (gnu services ssh)
+             (gnu packages ci)
+             (gnu packages certs)
+             (gnu services sysctl)
+             (gnu bootloader)
+             (gnu bootloader grub)
+             (gnu system file-systems)
+             (gnu services web)
+             (gnu services base)
+             (guix packages)
+             (guix git)
+             (guix gexp))
+
+(define %cuirass-specs
+  #~(list
+     '((#:name . "bigchaindb-packages")
+       (#:load-path-inputs . ("guix" "conf"))
+       (#:package-path-inputs . ("conf"))
+       (#:proc-input . "conf")
+       (#:proc-file . "ci/jobs.scm")
+       (#:proc . cuirass-jobs)
+       (#:proc-args . ((((#:package-name . bigchaindb)
+                         (#:system . "x86_64-linux"))
+                        ((#:package-name . tendermint-bin)
+                         (#:system . "x86_64-linux")))))
+       (#:inputs . (((#:name . "guix")
+                     (#:url . "git://git.savannah.gnu.org/guix.git")
+                     (#:load-path . ".")
+                     (#:branch . "master")
+                     (#:no-compile? . #t))
+                    ((#:name . "conf")
+                     (#:url . "git://github.com/ipdb/bigchaindb-guix.git")
+                     (#:load-path . ".")
+                     (#:branch . "master")
+                     (#:no-compile? . #t)))))))
+
+(defin %ci-services
+  (list
+   (service avahi-service-type)
+   (service cuirass-service-type
+            (cuirass-configuration
+             (specifications %cuirass-specs)
+             (remote-server (cuirass-remote-server-configuration))
+             (host "0.0.0.0")
+             (use-substitutes? #t)))))
