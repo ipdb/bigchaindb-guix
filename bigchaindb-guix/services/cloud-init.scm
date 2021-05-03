@@ -24,7 +24,14 @@
 (define-module (bigchaindb-guix services cloud-init)
   #:use-module (gnu services base)
   #:use-module (gnu services)
+  #:use-module (gnu services shepherd)
+  #:use-module (gnu packages guile)
+  #:use-module (gnu packages package-management)
+  #:use-module (guix channels)
+  #:use-module (guix describe)
   #:use-module (guix gexp)
+  #:use-module (guix inferior)
+  #:use-module (guix modules)
   #:use-module (guix records)
   #:use-module (ice-9 match)
   #:use-module (json)
@@ -33,72 +40,137 @@
   #:use-module (srfi srfi-11)
   #:use-module (web client)
   #:use-module (web response)
-  #:use-module (web uri))
+  #:use-module (web uri)
+  #:export (cloud-init-service-type
+            cloud-init-config
+            cloud-init-config?
+            cloud-init-config-metadata-host
+            cloud-init-config-metadata-port
+            make-cloud-init-config))
 
-(define %metadata-host "169.254.169.254")
+(define %metadata-host
+  (make-parameter "169.254.169.254"))
 
-(define %metadata-api-endpoint "/metadata/v1")
+(define %metadata-port
+  (make-parameter 80))
 
-(define %metadata-top-level-index
-  '("id"
-    "hostname"
-    "user-data"
-    "vendor-data"
-    "public-keys"
-    "region"
-    "interfaces/"
-    "dns/"
-    "floating_ip/"
-    "tags/"))
+(define %metadata-path
+  (make-parameter "/metadata/v1.json"))
 
-(define %all-metadata-url-json
-  (build-uri 'http
-             #:host %metadata-host
-             #:path "/metadata/v1.json"))
+(define-record-type* <cloud-init-config>
+  cloud-init-config make-cloud-init-config
+  cloud-init-config?
+  (metadata-host cloud-init-config-metadata-host
+                 (default (%metadata-host)))
+  (metadata-path cloud-init-config-metadata-path
+                 (default (%metadata-path)))
+  (log-file      cloud-init-config-file
+                 (default "/var/log/cloud-init.log"))
+  (requirements  cloud-init-config-requirements
+                 (default '()))) ;; + loopback
 
-(define* (query-metadata #:key (uri %all-metadata-url-json))
-  (let-values (((response body) (http-request uri
-                                              #:method 'GET)))
-    (if (eq? (response-code response) 200)
-        (json-string->scm body)
-        (throw 'metadata-query-error response))))
+(define* (query-metadata)
+  (let ((select? (match-lambda
+                   (('json rest ...)  #t)
+                   (_ #f))))
+    (with-extensions (list guile-json-4)
+      (with-imported-modules (source-module-closure '((json)) #:select? select?)
+        #~(begin
+            (use-modules (json)
+                         (ice-9 match)
+                         (web client)
+                         (web request)
+                         (web response)
+                         (web uri))
+            (let* ((xhost #$(%metadata-host))
+                   (xpath #$(%metadata-path))
+                   (xport #$(%metadata-port))
+                   (uri (build-uri
+                         'http #:host xhost #:path xpath #:port xport))
+                   (addr (cond
+                          ((equal? xhost "localhost") INADDR_LOOPBACK)
+                          ((string? xhost) (inet-pton AF_INET xhost))
+                          (else (throw 'invalid-host))))
+                   (sock (socket PF_INET SOCK_STREAM 0))
+                   (port-available? (lambda ()
+                                      (let loop ((i 0))
+                                        (catch 'system-error
+                                          (lambda ()
+                                            (connect sock AF_INET addr xport)
+                                            (close-port sock)
+                                            #t)
+                                          (lambda _
+                                            (if (< i 20)
+                                                (begin
+                                                  (sleep 1)
+                                                  (loop (+ 1 i)))
+                                                #f)))))))
+              (call-with-values
+                  (lambda ()
+                    (if (port-available?)
+                        (http-request uri #:method 'GET)
+                        (throw 'port-unavailable)))
+                (lambda (response body)
+                  (if
+                   (eq? (response-code response) 200)
+                   (json-string->scm body)
+                   (throw 'metadata-query-error response))))))))))
+(define (make-cloud-init-gexp)
+  #~(begin
+      (let-syntax ((ref (syntax-rules ()
+                          ;; nested assoc-ref for working with json alists
+                          ;; (ref '((a . ((b . hello!)))) 'a 'b) => 'hello!
+                          ((_ alist key key* ...)
+                           (let rec ((al alist) (kl (list key key* ...)))
+                             (match kl
+                               (() al)
+                               (_  (rec (assoc-ref al (car kl))
+                                        (cdr kl)))))))))
+        (let* ((metadata #$(query-metadata))
+               (dhcp-enabled (ref metadata "features" "dhcp_enabled")))
+          (display dhcp-enabled)))))
 
-(define* (query-metadata #:key (uri %all-metadata-url-json))
-  (let-values (((response body) (http-request uri
-                                              #:method 'GET)))
-    (if (eq? (response-code response) 200)
-        (json-string->scm body)
-        (throw 'metadata-query-error response))))
+(define (with-gexp-logger file xgexp)
+  #~(with-output-to-file #$file
+      (lambda ()
+        (with-exception-handler
+            (lambda (err)
+              (display ";;; Exiting with error:\n")
+              (display err)
+              (newline)
+              (force-output))
+          (lambda ()
+            (display ";;; Log start\n")
+            #$xgexp)))))
 
-(define (resolve-metadata-quiery-method provider)
-  (assoc-ref `((digitalocean . ,query-metadata)) provider))
+(define (cloud-init-shepherd-service config)
+  (match-record config <cloud-init-config>
+    (metadata-host metadata-path log-file requirements)
+    (shepherd-service
+     (provision '(cloud-init))
+     (documentation "Configure system")
+     (requirement `(user-processes loopback ,@requirements))
+     (start #~(lambda _
+                #$(with-gexp-logger
+                   log-file
+                   (parameterize ((%metadata-host metadata-host)
+                                  (%metadata-path metadata-path))
+                     (make-cloud-init-gexp)))))
+     (stop #~(lambda _ #t))
+     (respawn? #f)
+     (modules `((json)
+                (ice-9 match)
+                (web client)
+                (web request)
+                (web response)
+                (web uri)
+                ,@%default-modules)))))
 
-(define-record-type* <cloud-init-configuration>
-  cloud-inint-configuration make-cloud-init-configuration
-  cloud-init-configuration?
-  this-cloud-init-configuration
-  (provider cloud-init-configuration-provider
-            (default 'digitalocean))
-  (metadata-quiery-method cloud-init-configuration-metadata-quiery-method
-                          (thunked)
-                          (default (resolve-metadata-quiery-method
-                                    (cloud-init-configuration-provider
-                                     this-cloud-init-configuration)))))
-
-(define (metadata->static-networking-configuration provider metadata)
-  (let* ((interfaces   (assoc-ref (assoc-ref metadata "interfaces") "public"))
-         (name-servers (assoc-ref (assoc-ref metadata "dns") "nameservers"))
-         (make-static-networking-conf
-          (lambda (iface index)
-            (let ((ipv4-field  (assoc-ref iface "ipv4")))
-              (static-networking
-               (interface    (string-concatenate
-                              (list "eth" (number->string index))))
-               (ip           (assoc-ref ipv4-field "ip_address"))
-               (netmask      (assoc-ref ipv4-field "netmask"))
-               (gateway      (assoc-ref ipv4-field "gateway"))
-               (name-servers (vector->list name-servers)))))))
-    (map (lambda (x) (apply make-static-networking-conf x))
-         (zip (vector->list interfaces)
-              (iota (vector-length interfaces))))))
-
+(define cloud-init-service-type
+  (service-type
+   (name 'cloud-init)
+   (description "")
+   (extensions
+    (list (service-extension shepherd-root-service-type
+                             (compose list cloud-init-shepherd-service))))
+   (default-value (cloud-init-config))))
