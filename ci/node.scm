@@ -37,7 +37,7 @@
                      (#:branch . "master")
                      (#:no-compile? . #t)))))))
 
-(defin %ci-services
+(define %ci-services
   (list
    (service avahi-service-type)
    (service cuirass-service-type
