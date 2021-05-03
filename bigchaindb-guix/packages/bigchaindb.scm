@@ -1,7 +1,7 @@
 ;; -*- mode: scheme; coding: utf-8; -*-
 ;;
 ;; Copyright © 2019 IPDB Foundation
-;; Copyright © 2020 David Dashyan <mail@davie.li>
+;; Copyright © 2020, 2021 David Dashyan <mail@davie.li>
 ;; Copyright © 2019, 2020 Ricardo Wurmus <rekado@elephly.net>
 ;; Copyright © 2019, 2020 Marius Bakke <mbakke@fastmail.com>
 ;;
@@ -170,6 +170,8 @@ file before tests run.")
         (base32
          "1g5b4gbagnx4d830d9dh22isdnapykxqpmxjivp5083a1kr3z3bb"))))
     (build-system python-build-system)
+    (arguments
+     '(#:tests? #f))
     (propagated-inputs
      `(("python-base58" ,python-base58)
        ("python-cryptography-2.3" ,python-cryptography-2.3)
@@ -293,5 +295,3 @@ from your child processes as well!")
     (synopsis "BigchainDB: The Blockchain Database")
     (description "BigchainDB: The Blockchain Database")
     (license license:asl2.0)))
-
-

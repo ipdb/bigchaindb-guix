@@ -1,5 +1,5 @@
 ;; -*- mode: scheme; coding: utf-8; -*-
-;; Copyright © 2020 David Dashyan <mail@davie.li>
+;; Copyright © 2020, 2021 David Dashyan <mail@davie.li>
 ;;
 ;; This file is part of bigchaindb-guix
 ;;
@@ -17,9 +17,11 @@
 ;; along with bigchaindb-guix.  If not, see <http://www.gnu.org/licenses/>.
 
 (define-module (bigchaindb-guix os node)
-  #:use-module (bigchaindb-guix services bigchaindb)
   #:use-module (bigchaindb-guix packages bigchaindb)
+  #:use-module (bigchaindb-guix packages mongodb)
   #:use-module (bigchaindb-guix packages tendermint)
+  #:use-module (bigchaindb-guix services bigchaindb)
+  #:use-module (bigchaindb-guix services mongodb)
   #:use-module (gnu packages certs)
   #:use-module (gnu packages curl)
   #:use-module (gnu packages screen)
