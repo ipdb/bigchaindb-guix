@@ -56,13 +56,11 @@
 (define %jobs-module
   (current-module))
 
-(define (cuirass-jobs store arguments)
-  (map
-   (lambda (package-to-build)
-     (let ((name (assq-ref package-to-build #:package-name))
-           (system (or (assq-ref package-to-build #:system) "x86_64-linux")))
-       (package-job store
-                    (string-append (symbol->string name) "-package")
-                    (module-ref %jobs-module name)
-                    system)))
-   (last arguments)))
+(define (cuirass-jobs)
+  (with-store store
+    (let ((name 'bigchaindb)
+          (system "x86_64-linux"))
+      (package-job store
+                   (string-append (symbol->string name) "-package")
+                   (module-ref %jobs-module name)
+                   system))))
