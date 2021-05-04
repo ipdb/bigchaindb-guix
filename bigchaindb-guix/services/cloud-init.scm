@@ -115,20 +115,52 @@
                    (eq? (response-code response) 200)
                    (json-string->scm body)
                    (throw 'metadata-query-error response))))))))))
-(define (make-cloud-init-gexp)
+
+(define inerface-name-hwaddress-alist-gexp
+  ;; XXX: Linux specific
   #~(begin
-      (let-syntax ((ref (syntax-rules ()
-                          ;; nested assoc-ref for working with json alists
-                          ;; (ref '((a . ((b . hello!)))) 'a 'b) => 'hello!
-                          ((_ alist key key* ...)
-                           (let rec ((al alist) (kl (list key key* ...)))
-                             (match kl
-                               (() al)
-                               (_  (rec (assoc-ref al (car kl))
-                                        (cdr kl)))))))))
-        (let* ((metadata #$(query-metadata))
-               (dhcp-enabled (ref metadata "features" "dhcp_enabled")))
-          (display dhcp-enabled)))))
+      (use-modules (ice-9 match))
+      (map
+       ;; Make (interface-name . mac-address) alist
+       (lambda (name)
+         (call-with-input-file
+             (string-append "/sys/class/net/" name "/address")
+           (lambda (file) (cons name
+                                (string-trim-both (get-string-all file))))))
+       ;; interface names list
+       (let ((dir-stream (opendir "/sys/class/net")))
+         (let rec ((iface-names '())
+                   (iname (readdir dir-stream)))
+           (match iname
+             ((? eof-object?) (begin (closedir dir-stream) iface-names))
+             ((or "." "..")   (rec iface-names (readdir dir-stream)))
+             (else            (rec (cons (readdir dir-stream)
+                                         (cons iname iface-names))
+                                   (readdir dir-stream)))))))))
+
+(define (make-cloud-init-gexp)
+  (with-imported-modules '((guix build syscalls))
+    #~(begin
+        (use-modules (guix build syscalls)
+                     (ice-9 match)
+                     (ice-9 textual-ports))
+        (let-syntax ((ref (syntax-rules ()
+                            ;; nested assoc-ref for working with json alists
+                            ;; (ref '((a . ((b . hello!)))) 'a 'b) => 'hello!
+                            ((_ alist key key* ...)
+                             (let rec ((al alist) (kl (list key key* ...)))
+                               (match kl
+                                 (() al)
+                                 (_  (rec (assoc-ref al (car kl))
+                                          (cdr kl)))))))))
+          ;; Metadata vars
+          (let* ((metadata           #$(query-metadata))
+                 (dhcp-enabled       (ref metadata "features" "dhcp_enabled"))
+                 (public-keys        (ref metadata "public_keys"))
+                 (public-interfaces  (ref metadata "interfaces" "public"))
+                 (private-interfaces (ref metadata "interfaces" "private"))
+                 (name-hwaddr-alist  #$inerface-name-hwaddress-alist-gexp))
+            (pk name-hwaddr-alist))))))
 
 (define (with-gexp-logger file xgexp)
   #~(with-output-to-file #$file
@@ -160,6 +192,7 @@
      (respawn? #f)
      (modules `((json)
                 (ice-9 match)
+                (guix build syscalls)
                 (web client)
                 (web request)
                 (web response)
