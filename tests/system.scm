@@ -58,7 +58,7 @@
        #~(begin
            (use-modules (tests fixtures)
                         (web server))
-           (run-digitalocean-metadata-server))))))
+           (run-digitalocean-metadata-server #:port 80))))))
 
 (define %cloud-init-metadata-server-os
   (operating-system
