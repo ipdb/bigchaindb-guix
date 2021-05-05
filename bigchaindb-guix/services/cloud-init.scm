@@ -143,7 +143,8 @@
     #~(begin
         (use-modules (guix build syscalls)
                      (ice-9 match)
-                     (ice-9 textual-ports))
+                     (ice-9 textual-ports)
+                     (guix build utils))
         (let-syntax ((ref (syntax-rules ()
                             ;; nested assoc-ref for working with json alists
                             ;; (ref '((a . ((b . hello!)))) 'a 'b) => 'hello!
@@ -160,7 +161,35 @@
                  (public-interfaces  (ref metadata "interfaces" "public"))
                  (private-interfaces (ref metadata "interfaces" "private"))
                  (name-hwaddr-alist  #$inerface-name-hwaddress-alist-gexp))
-            (pk name-hwaddr-alist))))))
+            ;; Configuring network
+            (for-each
+             (lambda (iface-info)
+               (let* ((addr-str    (ref iface-info "ipv4" "ip_address"))
+                      (addr        (inet-pton AF_INET addr-str))
+                      (sockaddr    (make-socket-address AF_INET addr 0))
+                      (mask-str    (ref iface-info "ipv4" "netmask"))
+                      (mask        (inet-pton AF_INET mask-str))
+                      (maskaddr    (make-socket-address AF_INET mask 0))
+                      (gateway-str (ref iface-info "ipv4" "gateway"))
+                      (gateway     (inet-pton AF_INET gateway-str))
+                      (gatewayaddr (make-socket-address AF_INET gateway 0))
+                      (iface-name  (assoc-ref name-hwaddr-alist
+                                              (ref iface-info "mac"))))
+                 (configure-network-interface iface-name sockaddr
+                                              ;; ignoring loopback here
+                                              (logior IFF_UP 0) ;; ???
+                                              #:netmask maskaddr)
+                 (when gateway
+                   (let ((sock (socket AF_INET SOCK_DGRAM 0)))
+                     (add-network-route/gateway sock gatewayaddr)
+                     (close-port sock)))))
+             (vector->list private-interfaces))
+            ;; Inserting ssh keys
+            (mkdir-p "/root/.ssh")
+            (call-with-output-file "/root/.ssh/authorized_keys"
+              (lambda (f)
+                (display (ref metadata "public_keys") f)
+                (newline f))))))))
 
 (define (with-gexp-logger file xgexp)
   #~(with-output-to-file #$file
