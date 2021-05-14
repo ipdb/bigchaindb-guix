@@ -1,6 +1,8 @@
 (define-module (tests system)
   #:use-module (bigchaindb-guix services cloud-init)
+  #:use-module (gnu build marionette)
   #:use-module (gnu packages curl)
+  #:use-module (gnu packages ocr)
   #:use-module (gnu packages guile)
   #:use-module (gnu packages gnupg)
   #:use-module (gnu services base)
@@ -24,10 +26,12 @@
   #:use-module (json)
   #:use-module (srfi srfi-13)
   #:use-module (srfi srfi-64)
+  #:use-module (srfi srfi-43)
   #:use-module (web request)
   #:use-module (web response)
   #:use-module (web server)
   #:use-module (web uri)
+  #:use-module (tests fixtures)
   #:export (%test-cloud-init))
 
 
@@ -88,6 +92,17 @@
      #:imported-modules '((gnu services herd))
      #:requirements '(metadata-server)))
 
+  (define vm-script
+    (run-derivation->output-path
+     (system-qemu-image/shared-store-script
+      os
+      #:options (vector->list
+                 (vector-map
+                  (lambda (_ i)
+                    (string-append "-nic user,model=e1000,mac="
+                                   (assoc-ref i "mac")))
+                  (nested-assoc-ref %metadata-scm "interfaces" "public"))))))
+
   (define test
     (with-imported-modules '((gnu build marionette)
                              (web request)
@@ -98,6 +113,7 @@
           (use-modules (gnu build marionette)
                        (ice-9 popen)
                        (ice-9 rdelim)
+                       (ice-9 textual-ports)
                        (srfi srfi-64)
                        (web request)
                        (web response)
@@ -105,7 +121,7 @@
                        (web uri))
 
           (define marionette
-            (make-marionette (list #$(virtual-machine os))))
+            (make-marionette (list #$vm-script)))
 
           (mkdir #$output)
           (chdir #$output)
@@ -121,17 +137,11 @@
                      (start-service 'cloud-init))
              marionette))
 
-          (marionette-eval
-           '(begin
-              (with-exception-handler (lambda (err) err)
-                (lambda ()
-                  #$(parameterize (((@@ (bigchaindb-guix services cloud-init)
-                                        %metadata-host)
-                                    "localhost"))
-                      ((@@ (bigchaindb-guix services cloud-init)
-                           query-metadata))))
-                #:unwind? #t))
-           marionette)
+          (test-assert "get text"
+            (marionette-screen-text marionette
+                                    #:ocrad
+                                    #$(file-append ocrad "/bin/ocrad")))
+
 
           (test-end)
           (exit (= (test-runner-fail-count (test-runner-current)) 0)))))
