@@ -81,7 +81,8 @@
                          (web client)
                          (web request)
                          (web response)
-                         (web uri))
+                         (web uri)
+                         (rnrs bytevectors))
             (let* ((xhost #$(%metadata-host))
                    (xpath #$(%metadata-path))
                    (xport #$(%metadata-port))
@@ -113,7 +114,9 @@
                 (lambda (response body)
                   (if
                    (eq? (response-code response) 200)
-                   (json-string->scm body)
+                   (match body
+                     ((? string?)     (json-string->scm body))
+                     ((? bytevector?) (json-string->scm (utf8->string body))))
                    (throw 'metadata-query-error response))))))))))
 
 (define hwaddress-inerface-name-alist-gexp
@@ -154,6 +157,13 @@
                                  (() al)
                                  (_  (rec (assoc-ref al (car kl))
                                           (cdr kl)))))))))
+          ;; random conf NOTE: do we need it?
+          (configure-network-interface
+           "eth0"
+           (make-socket-address AF_INET (inet-pton AF_INET "169.254.100.100") 0)
+           (logior IFF_UP 0)
+           #:netmask (make-socket-address AF_INET (inet-pton AF_INET "255.255.0.0") 0))
+
           ;; Metadata vars
           (let* ((metadata           #$(query-metadata))
                  (dhcp-enabled       (ref metadata "features" "dhcp_enabled"))
@@ -161,6 +171,12 @@
                  (public-interfaces  (ref metadata "interfaces" "public"))
                  (private-interfaces (ref metadata "interfaces" "private"))
                  (hwaddr-name-alist  #$hwaddress-inerface-name-alist-gexp))
+
+            ;; set iface down NOTE: do we need it?
+            (let ((sock (socket AF_INET SOCK_STREAM 0)))
+              (set-network-interface-flags sock "eth0" 0) ;; FIXME
+              (close-port sock))
+
             ;; Configuring network
             (for-each
              (lambda (iface-info)
@@ -176,21 +192,21 @@
                       (iface-name  (assoc-ref hwaddr-name-alist
                                               (string-downcase
                                                (ref iface-info "mac")))))
-                 (configure-network-interface iface-name sockaddr
-                                              ;; ignoring loopback here
-                                              (logior IFF_UP 0) ;; ???
-                                              #:netmask maskaddr)
+                 (configure-network-interface
+                  ;; ignoring loopback here
+                  iface-name sockaddr IFF_UP #:netmask maskaddr)
                  (when gateway
                    (let ((sock (socket AF_INET SOCK_DGRAM 0)))
                      (add-network-route/gateway sock gatewayaddr)
                      (close-port sock)))))
              (vector->list public-interfaces))
-            ;; Inserting ssh keys
+            (display "Inserting ssh keys\n")
             (mkdir-p "/root/.ssh")
             (call-with-output-file "/root/.ssh/authorized_keys"
               (lambda (f)
-                (vector-for-each (lambda (key) (display key f) (newline f))
-                                 (pk 2 (ref metadata "public_keys"))))))))))
+                (for-each (lambda (key) (display key f) (newline f))
+                          ;; vector-for-each is unbound here for some reason
+                          (vector->list (ref metadata "public_keys"))))))))))
 
 (define (with-gexp-logger file xgexp)
   #~(with-output-to-file #$file
