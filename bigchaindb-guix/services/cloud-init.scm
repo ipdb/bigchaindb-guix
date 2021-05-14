@@ -116,17 +116,17 @@
                    (json-string->scm body)
                    (throw 'metadata-query-error response))))))))))
 
-(define inerface-name-hwaddress-alist-gexp
+(define hwaddress-inerface-name-alist-gexp
   ;; XXX: Linux specific
   #~(begin
       (use-modules (ice-9 match))
       (map
-       ;; Make (interface-name . mac-address) alist
        (lambda (name)
+         ;; Make (mac-address . interface-name) pair
          (call-with-input-file
              (string-append "/sys/class/net/" name "/address")
-           (lambda (file) (cons name
-                                (string-trim-both (get-string-all file))))))
+           (lambda (file) (cons (string-trim-both (get-string-all file))
+                                name))))
        ;; interface names list
        (let ((dir-stream (opendir "/sys/class/net")))
          (let rec ((iface-names '())
@@ -160,7 +160,7 @@
                  (public-keys        (ref metadata "public_keys"))
                  (public-interfaces  (ref metadata "interfaces" "public"))
                  (private-interfaces (ref metadata "interfaces" "private"))
-                 (name-hwaddr-alist  #$inerface-name-hwaddress-alist-gexp))
+                 (hwaddr-name-alist  #$hwaddress-inerface-name-alist-gexp))
             ;; Configuring network
             (for-each
              (lambda (iface-info)
@@ -173,8 +173,9 @@
                       (gateway-str (ref iface-info "ipv4" "gateway"))
                       (gateway     (inet-pton AF_INET gateway-str))
                       (gatewayaddr (make-socket-address AF_INET gateway 0))
-                      (iface-name  (assoc-ref name-hwaddr-alist
-                                              (ref iface-info "mac"))))
+                      (iface-name  (assoc-ref hwaddr-name-alist
+                                              (string-downcase
+                                               (ref iface-info "mac")))))
                  (configure-network-interface iface-name sockaddr
                                               ;; ignoring loopback here
                                               (logior IFF_UP 0) ;; ???
