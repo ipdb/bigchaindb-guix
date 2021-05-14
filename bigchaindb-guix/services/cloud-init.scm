@@ -143,7 +143,8 @@
         (use-modules (guix build syscalls)
                      (ice-9 match)
                      (ice-9 textual-ports)
-                     (guix build utils))
+                     (guix build utils)
+                     (srfi srfi-43))
         (let-syntax ((ref (syntax-rules ()
                             ;; nested assoc-ref for working with json alists
                             ;; (ref '((a . ((b . hello!)))) 'a 'b) => 'hello!
@@ -187,8 +188,8 @@
             (mkdir-p "/root/.ssh")
             (call-with-output-file "/root/.ssh/authorized_keys"
               (lambda (f)
-                (display (ref metadata "public_keys") f)
-                (newline f))))))))
+                (vector-for-each (lambda (key) (display key f) (newline f))
+                                 (pk 2 (ref metadata "public_keys"))))))))))
 
 (define (with-gexp-logger file xgexp)
   #~(with-output-to-file #$file
