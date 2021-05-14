@@ -17,8 +17,12 @@
   #:export (%metadata-scm
             %metadata-json-string
             run-digitalocean-metadata-server
+            ;; store
+            eval-in-store
+            run-derivation->output-path
             ;; utils
-            eval-in-store))
+            nested-assoc-ref))
+
 
 ;;; Metadata mock sever
 
@@ -123,6 +127,13 @@ oDIbO24kFx9dTU/5Mdj2b+GQzfstux3uLMvlNxztRLTqFNSwQcc09vMAS0WZUkB4trT/WlkoDka/L46\
         (return (primitive-load
                  (derivation->output-path drv)))))))
 
+(define (run-derivation->output-path ->drv)
+  (with-store store
+    (run-with-store store
+      (mlet* %store-monad ((drv ->drv)
+                           (_ (built-derivations (list drv))))
+        (return (derivation->output-path drv))))))
+
 ;;; Utilities
 (define* (wait-for-port address port
                         #:key (timeout 20))
@@ -146,3 +157,10 @@ connections. ADDRESS is either printable network address, integer, or
                 (sleep 1)
                 (loop (+ 1 i)))
               'failure))))))
+
+(define (nested-assoc-ref alist key . rest)
+  (let rec ((al alist)
+            (kl (cons key rest)))
+    (match kl
+      (() al)
+      (else (rec (assoc-ref al (car kl)) (cdr kl))))))
