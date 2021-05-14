@@ -134,8 +134,7 @@
            (match iname
              ((? eof-object?) (begin (closedir dir-stream) iface-names))
              ((or "." "..")   (rec iface-names (readdir dir-stream)))
-             (else            (rec (cons (readdir dir-stream)
-                                         (cons iname iface-names))
+             (else            (rec (cons iname iface-names)
                                    (readdir dir-stream)))))))))
 
 (define (make-cloud-init-gexp)
