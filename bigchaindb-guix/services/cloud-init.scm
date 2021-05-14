@@ -183,7 +183,7 @@
                    (let ((sock (socket AF_INET SOCK_DGRAM 0)))
                      (add-network-route/gateway sock gatewayaddr)
                      (close-port sock)))))
-             (vector->list private-interfaces))
+             (vector->list public-interfaces))
             ;; Inserting ssh keys
             (mkdir-p "/root/.ssh")
             (call-with-output-file "/root/.ssh/authorized_keys"
