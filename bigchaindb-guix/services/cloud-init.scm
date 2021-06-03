@@ -26,6 +26,7 @@
   #:use-module (gnu services)
   #:use-module (gnu services shepherd)
   #:use-module (gnu packages guile)
+  #:use-module (gnu packages guile-xyz)
   #:use-module (gnu packages package-management)
   #:use-module (guix channels)
   #:use-module (guix describe)
@@ -140,6 +141,26 @@
              (else            (rec (cons iname iface-names)
                                    (readdir dir-stream)))))))))
 
+(define resize-filesystem-gexp
+  (let ((select? (match-lambda
+                   (('parted rest ...)         #t)
+                   (('bytestructures rest ...) #t)
+                   (_ #f))))
+    (with-extensions (list guile-parted guile-bytestructures)
+      (with-imported-modules  (source-module-closure '((parted))
+                                                     #:select? select?)
+        #~(begin
+            (use-modules (parted))
+            (let* ((device     (get-device "/dev/vda"))
+                   (disk       (disk-new device))
+                   (partition  (disk-get-partition disk 2))
+                   (constraint (device-get-optimal-aligned-constraint
+                                device)))
+              (disk-maximize-partition disk partition constraint)
+              (disk-commit disk)
+              (system* "/run/current-system/profile/sbin/resize2fs"
+                       "/dev/vda2")))))))
+
 (define (make-cloud-init-gexp)
   (with-imported-modules '((guix build syscalls))
     #~(begin
@@ -218,7 +239,10 @@
                                  (map (lambda (x) (string-append "nameserver " x))
                                       (vector->list name-servers))
                                  "\n" 'suffix))))
-                  (display content f)))))))))
+                  (display content f))))
+
+            (display "Resizing partition...\n")
+            #$resize-filesystem-gexp)))))
 
 (define (with-gexp-logger file xgexp)
   #~(with-output-to-file #$file
