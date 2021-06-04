@@ -63,7 +63,7 @@
       (list (service dhcp-client-service-type)
             (service openssh-service-type
                      (openssh-configuration
-                      (port-number 2222)))
+                      (port-number 22)))
             (service mongodb-service-type)
             (service tendermint-service-type
                      (tendermint-configuration
