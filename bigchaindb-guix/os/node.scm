@@ -43,9 +43,6 @@
     (host-name "BigchainDB Node")
     (timezone "Europe/Berlin")
     (locale "en_US.utf8")
-    ;; Boot in "legacy" BIOS mode, assuming /dev/sdX is the
-    ;; target hard disk, and "my-root" is the label of the target
-    ;; root file system.
     (bootloader (bootloader-configuration
                  (bootloader grub-bootloader)
                  (target "/dev/vda")))
