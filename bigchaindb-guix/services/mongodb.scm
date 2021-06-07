@@ -73,6 +73,9 @@ storage:
       (requirement '(user-processes loopback))
       (start #~(make-forkexec-constructor
                 `(,(string-append #$mongodb "/bin/mongod")
+                  ;; TODO: Support Wiredtiger storage engine
+                  "--storageEngine=mmapv1"
+                  "--smallfiles"
                   "--config"
                   ,#$config-file)
                 #:user "mongodb"

@@ -103,10 +103,6 @@ standard Go idioms.")
     (inputs
      `(("openssl" ,openssl-1.0)
        ("pcre" ,pcre)
-        ,@(match (%current-system)
-            ((or "x86_64-linux" "aarch64-linux" "mips64el-linux")
-             `(("wiredtiger" ,wiredtiger)))
-            (_ `()))
        ("yaml-cpp" ,yaml-cpp)
        ("zlib" ,zlib)
        ("snappy" ,snappy)))
@@ -123,12 +119,7 @@ standard Go idioms.")
        (let ((common-options
               `(;; "--use-system-tcmalloc" TODO: Missing gperftools
                 "--use-system-pcre"
-                ;; wiredtiger is 64-bit only
-                ,,(if (any (cute string-prefix? <> (or (%current-target-system)
-                                                       (%current-system)))
-                           '("i686-linux" "armhf-linux"))
-                    ``"--wiredtiger=off"
-                    ``"--use-system-wiredtiger")
+                "--wiredtiger=off"
                 ;; TODO
                 ;; build/opt/mongo/db/fts/unicode/string.o failed: Error 1
                 ;; --use-system-boost
