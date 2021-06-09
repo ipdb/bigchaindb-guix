@@ -21,110 +21,75 @@
 ;; along with bigchaindb-guix.  If not, see <http://www.gnu.org/licenses/>.
 
 (define-module (bigchaindb-guix packages bigchaindb)
-  #:use-module ((guix licenses) #:prefix license:)
+  #:use-module (bigchaindb-guix packages rust)
   #:use-module (gnu packages autotools)
   #:use-module (gnu packages check)
   #:use-module (gnu packages compression)
   #:use-module (gnu packages crypto)
   #:use-module (gnu packages guile)
   #:use-module (gnu packages guile-xyz)
+  #:use-module (gnu packages linux)
   #:use-module (gnu packages package-management)
   #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages protobuf)
+  #:use-module (gnu packages python-build)
   #:use-module (gnu packages python-crypto)
   #:use-module (gnu packages python-web)
   #:use-module (gnu packages python-xyz)
+  ;; #:use-module (gnu packages rust)
   #:use-module (gnu packages ssh)
   #:use-module (gnu packages texinfo)
+  #:use-module (gnu packages time)
   #:use-module (gnu packages web)
   #:use-module (guix build-system gnu)
   #:use-module (guix build-system python)
   #:use-module (guix download)
   #:use-module (guix git-download)
+  #:use-module ((guix licenses) #:prefix license:)
   #:use-module (guix packages))
 
-;; ~v2.3 required by cryptoconditions
-(define-public python-cryptography-2.3
+
+;;; Bigchaindb-abci
+(define-public python-colorlog-for-bigchaindb-abci
   (package
-    (inherit python-cryptography)
-    (name "python-cryptography-2.3")
-    (version "2.3.1")
-    (source
-     (origin
-       (method url-fetch)
-       (uri (pypi-uri "cryptography" version))
-       (sha256
-        (base32
-         "1mnzf168vlxirq7fw9dm9zbvma7z8phc9cl5bffw5916m0y1244d"))))
-    (arguments
-     ;; FIXME: Tests fail
-     '(#:tests? #f))))
+    (inherit python-colorlog)
+    (version "5.0.1")
+    (source (origin
+              (inherit (package-source python-colorlog))
+              (uri (pypi-uri "colorlog" version))
+              (sha256
+               (base32
+                "1sl8wps7d8xl2larlb7wkvr7sa3bpvyprq4y8ks04awn0qx02z7i"))))))
 
-;; ~v1.1 required by cryptoconditions
-(define-public python-pynacl-1.1
+(define-public python-protobuf-for-bigchaindb-abci
   (package
-    (inherit python-pynacl)
-    (name "python-pynacl-1.1")
-    (version "1.1.2")
+    (inherit python-protobuf)
+    (version "3.17.2")
     (source
      (origin
-       (method url-fetch)
-       (uri (pypi-uri "PyNaCl" version))
-       (modules '((guix build utils)))
-       ;; Remove bundled libsodium.
-       (snippet '(begin (delete-file-recursively "src/libsodium") #t))
+       (inherit (package-source python-protobuf))
+       (uri (pypi-uri "protobuf" version))
        (sha256
         (base32
-         "135gz0020fqx8fbr9izpwyq49aww202nkqacq0cw61xz99sjpx9j"))))))
-
-(define-public python-pytest-pythonpath
-  (package
-    (name "python-pytest-pythonpath")
-    (version "0.7.3")
-    (source
-     (origin
-       (method url-fetch)
-       (uri (pypi-uri "pytest-pythonpath" version))
-       (sha256
-        (base32
-         "0qhxh0z2b3p52v3i0za9mrmjnb1nlvvyi2g23rf88b3xrrm59z33"))))
-    (build-system python-build-system)
-    (arguments
-     ;; FIXME: Tests fail
-     '(#:tests? #f))
-    (propagated-inputs
-     `(("python-pytest" ,python-pytest)))
-    (home-page
-     "https://github.com/bigsassy/pytest-pythonpath")
-    (synopsis
-     "pytest plugin for adding to the PYTHONPATH from command line or configs")
-    (description
-     "This is a py.test plugin for adding to the PYTHONPATH from the pytests.ini
-file before tests run.")
-    (license license:expat)))
+         "03fl72ayf5crfpn2qfdfnfsz31kvzfnzg8q29x56wwa6y2n50d2s"))))))
 
 (define-public python-bigchaindb-abci
   (package
     (name "python-bigchaindb-abci")
-    (version "1.0.3")
+    (version "1.0.7")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "bigchaindb-abci" version))
        (sha256
         (base32
-         "08c027sj6k19pigw2g1nj5m08z1kvl5wvj0zjsiwdv2xlmm5j0xb"))))
+         "1m177mprnl999dyykmad0bhspbqhh7m1ygf94ks9vh1zq346w8jl"))))
     (build-system python-build-system)
-    (arguments
-     ;; FIXME: Tests fail
-     '(#:tests? #f))
+    (arguments '(#:tests? #f))
     (propagated-inputs
-     `(("python-colorlog" ,python-colorlog)
+     `(("python-colorlog" ,python-colorlog-for-bigchaindb-abci)
        ("python-gevent" ,python-gevent)
-       ("python-protobuf-3.6" ,python-protobuf-3.6)
-       ("python-pytest" ,python-pytest)
-       ("python-pytest-cov" ,python-pytest-cov)
-       ("python-pytest-pythonpath" ,python-pytest-pythonpath)))
+       ("python-protobuf" ,python-protobuf-for-bigchaindb-abci)))
     (home-page
      "https://github.com/davebryson/py-abci")
     (synopsis
@@ -133,110 +98,169 @@ file before tests run.")
      "Python based ABCI Server for Tendermint")
     (license license:asl2.0)))
 
-;; required by python-cryptoconditions
-(define-public python-pytest-forked
+
+;;; Cryptoconditions
+(define-public python-setuptools-scm
   (package
-    (name "python-pytest-forked")
-    (version "1.1.3")
+    (name "python-setuptools-scm")
+    (version "6.0.1")
     (source
      (origin
        (method url-fetch)
-       (uri (pypi-uri "pytest-forked" version))
+       (uri (pypi-uri "setuptools-scm" version))
        (sha256
         (base32
-         "000i4q7my2fq4l49n8idx2c812dql97qv6qpm2vhrrn9v6g6j18q"))))
+         "14lfq6k4j1i2zfr0bsdc930j76h0vgxbjxd22sab5s87rdlmm4ni"))))
     (build-system python-build-system)
     (propagated-inputs
-     `(("python-pytest" ,python-pytest)))
-    (native-inputs
-     `(("python-setuptools-scm" ,python-setuptools-scm)))
+     `(("python-setuptools" ,python-setuptools)))
     (home-page
-     "https://github.com/pytest-dev/pytest-forked")
+     "https://github.com/pypa/setuptools_scm/")
     (synopsis
-     "run tests in isolated forked subprocesses")
+     "the blessed package to manage your versions by scm tags")
     (description
-     "run tests in isolated forked subprocesses")
+     "the blessed package to manage your versions by scm tags")
     (license license:expat)))
+
+(define-public python-setuptools-rust
+  (package
+    (name "python-setuptools-rust")
+    (version "0.12.1")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "setuptools-rust" version))
+       (sha256
+        (base32
+         "03jp7lnj7pmb3m8lq15rxi3x56m6hjhl209ygyf47bph4klhjw34"))))
+    (build-system python-build-system)
+    (native-inputs
+     `(("python-wheel" ,python-wheel)
+       ("python-setuptools-scm" ,python-setuptools-scm)))
+    (propagated-inputs
+     `(("python-semantic-version" ,python-semantic-version)
+       ("python-toml" ,python-toml)
+       ("python-setuptools" ,python-setuptools)))
+    (home-page
+     "https://github.com/PyO3/setuptools-rust")
+    (synopsis "Setuptools Rust extension plugin")
+    (description "Setuptools Rust extension plugin")
+    (license license:expat)))
+
+(define-public python-cryptography-for-cryptoconditions
+  (package
+    (inherit python-cryptography)
+    (version "3.4.7")
+    (source
+     (origin
+       (inherit (package-source python-cryptography))
+       (uri (pypi-uri "cryptography" version))
+       (sha256
+        (base32
+         "04x7bhjkglxpllad10821vxddlmxdkd3gjvp35iljmnj2s0xw41x"))))
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-before 'build 'disable-rust
+           (lambda* (#:key tests? #:allow-other-keys)
+             (setenv "CRYPTOGRAPHY_DONT_BUILD_RUST" "1"))))))
+    (native-inputs
+     (append
+      `(;; FIXME enable rust?
+        ;; ("cargo" ,rust "cargo")
+        ;; ("rust" ,rust)
+        ;; ("rust-pyo3" ,rust-pyo3-0.13)
+        ("python-setuptools-rust" ,python-setuptools-rust))
+      (package-native-inputs python-cryptography)))))
+
+(define-public python-base58-for-cryptoconditions
+  (package
+    (inherit python-base58)
+    (version "2.1.0")
+    (source
+     (origin
+       (inherit (package-source python-base58))
+       (uri (pypi-uri "base58" version))
+       (sha256
+        (base32
+         "18h1h1v3awwxcii7apirqijf6xgcg9pll8h772pf2q9w99xm86hp"))))
+    (arguments ;; moved to pytest
+     '(#:tests? #f))))
 
 (define-public python-cryptoconditions
   (package
     (name "python-cryptoconditions")
-    (version "0.8.0")
+    (version "0.8.1")
     (source
      (origin
        (method url-fetch)
        (uri (pypi-uri "cryptoconditions" version))
        (sha256
         (base32
-         "1g5b4gbagnx4d830d9dh22isdnapykxqpmxjivp5083a1kr3z3bb"))))
+         "162gr29g8mnj8p49j5cifh6pakdpwq03qjkm9pbyp017kh3nl7cd"))))
     (build-system python-build-system)
     (arguments
      '(#:tests? #f))
-    (propagated-inputs
-     `(("python-base58" ,python-base58)
-       ("python-cryptography-2.3" ,python-cryptography-2.3)
-       ("python-pyasn1" ,python-pyasn1)
-       ("python-pynacl-1.1" ,python-pynacl-1.1)))
     (native-inputs
-     `(;; Tests requirements:
-       ("python-coverage" ,python-coverage)
-       ("python-hypothesis" ,python-hypothesis)
-       ("python-pep8" ,python-pep8)
-       ("python-pyflakes" ,python-pyflakes)
-       ("python-pylint" ,python-pylint)
-       ("python-pytest" ,python-pytest)
-       ("python-pytest-cov" ,python-pytest-cov)
-       ("python-pytest-forked" ,python-pytest-forked)
-       ("python-pytest-xdist" ,python-pytest-xdist)
-       ("python-pytest-runner" ,python-pytest-runner)))
+     `(("python-pytest-runner" ,python-pytest-runner)))
+    (propagated-inputs
+     `(("python-base58"       ,python-base58-for-cryptoconditions)
+       ("python-cryptography" ,python-cryptography-for-cryptoconditions)
+       ("python-pyasn1"       ,python-pyasn1)
+       ("python-pynacl"       ,python-pynacl)))
     (home-page
      "https://github.com/bigchaindb/cryptoconditions/")
     (synopsis
-     "Multi-algorithm, multi-level, multi-signature format for expressing
-conditions and fulfillments according to the Interledger Protocol (ILP).")
-    (description "Cryptoconditions provide a mechanism to describe a signed
-message such that multiple actors in a distributed system can all verify the
-same signed message and agree on whether it matches the description." )
+     "Multi-algorithm, multi-level, multi-signature format for
+expressing conditions and fulfillments according to the Interledger
+Protocol (ILP).")
+    (description
+     "Multi-algorithm, multi-level, multi-signature format for
+expressing conditions and fulfillments according to the Interledger
+Protocol (ILP).")
     (license license:expat)))
 
-(define-public python-flask-cors
+
+;;; Bigchaindb
+(define-public python-setproctitle-for-bigchaindb
   (package
-    (name "python-flask-cors")
-    (version "3.0.8")
+    (inherit python-setproctitle)
+    (version "1.2.2")
     (source
      (origin
        (method url-fetch)
-       (uri (pypi-uri "Flask-Cors" version))
+       (uri (pypi-uri "setproctitle" version))
        (sha256
         (base32
-         "05id72xwvhni23yasdvpdd8vsf3v4j6gzbqqff2g04j6xcih85vj"))))
-    (build-system python-build-system)
-    (propagated-inputs
-     `(("python-flask" ,python-flask)
-       ("python-six" ,python-six)))
-    (native-inputs
-     `(("python-nose" ,python-nose)))
+         "1pwp1lb9mf0kgg3sbf1z8dkfnmwcqvixc0by00s3sh2ji0n4gyvx"))))
     (arguments
-     '(#:tests? #f))
-    ;; Flask-Cors-3.0.8/tests/decorator/test_exception_interception.py",
-    ;; line 30, in test_acl_uncaught_exception_500
-    (home-page
-     "https://github.com/corydolphin/flask-cors")
-    (synopsis
-     "A Flask extension adding a decorator for CORS support")
-    (description
-     "A Flask extension for handling Cross Origin Resource Sharing (CORS),
-making cross-origin AJAX possible. This package has a simple philosophy, when
-you want to enable CORS, you wish to enable it for all use cases on a domain.
-This means no mucking around with different allowed headers, methods, etc. By
-default, submission of cookies across domains is disabled due to the security
-implications, please see the documentation for how to enable credential'ed
-requests, and please make sure you add some sort of CSRF protection before doing
-so!")
-    (license license:expat)))
+     `(#:modules ((guix build utils)
+                  (guix build python-build-system)
+                  (ice-9 ftw)
+                  (srfi srfi-1)
+                  (srfi srfi-26))
+       #:phases
+       (modify-phases %standard-phases
+         (replace 'check
+           (lambda* (#:key tests? #:allow-other-keys)
+             (when tests?
+               (let ((cwd (getcwd)))
+                 (setenv "PYTHONPATH"
+                         (string-append
+                          cwd "/build/"
+                          (find (cut string-prefix? "lib" <>)
+                                (scandir (string-append cwd "/build")))
+                          ":"
+                          (getenv "PYTHONPATH")))
+                 (substitute* "tests/conftest.py"
+                   (("\\[\"cc\"\\]")
+                    "[\"gcc\"]"))
+                 (invoke "python" "-m" "pytest"))))))))
+    (native-inputs
+     `(("python-pytest" ,python-pytest)
+       ("procps" ,procps)))))
 
 (define-public python-logstats
-  ;; NOTE New version is available
   (package
     (name "python-logstats")
     (version "0.3.0")
@@ -258,37 +282,203 @@ now and then. It supports the multiprocessing modules, so you can collect stats
 from your child processes as well!")
     (license license:expat)))
 
+(define-public python-requests-for-bigchaindb
+  (package
+    (inherit python-requests)
+    (version "2.25.1")
+    (source (origin
+              (method url-fetch)
+              (uri (pypi-uri "requests" version))
+              (sha256
+               (base32
+                "015qflyqsgsz09gnar69s6ga74ivq5kch69s4qxz3904m7a3v5r7"))))))
+
+(define-public python-rapidjson-for-bigchaindb
+  (package
+    (inherit python-rapidjson)
+    (version "1.0")
+    (source
+     (origin
+       (inherit (package-source python-rapidjson))
+       (uri (pypi-uri "python-rapidjson" version))
+       (sha256
+        (base32
+         "0771wik6nxmlwqa97xqxvqjfffybvlpj8i44wylmpf5h84gac7x6"))))
+    (native-inputs
+     `(("python-pytest" ,python-pytest)
+       ("python-pytz" ,python-pytz)
+       ("rapidjson"
+        ,(package
+           (inherit rapidjson)
+           (source
+            (origin
+              (inherit (package-source rapidjson))
+              (method git-fetch)
+              (uri (git-reference
+                    (url "https://github.com/Tencent/rapidjson")
+                    (commit "0ccdbf364c577803e2a751f5aededce935314313")))
+              (sha256
+               (base32
+                "00givz888ixjflzyk34zzp8id0a6wng9dzczsdwx7jd8r8vc1h8a"))))))))))
+
+(define-public python-pyyaml-for-bigchaindb
+  (package
+    (inherit python-pyyaml)
+    (version "5.4.1")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "PyYAML" version))
+       (sha256
+        (base32
+         "0pm440pmpvgv5rbbnm8hk4qga5a292kvlm1bh3x2nwr8pb5p8xv0"))))))
+
+(define-public python-pymongo-for-bigchaindb
+  (package
+    (inherit python-pymongo)
+    (version "3.11.4")
+    (source (origin
+              (inherit (package-source python-pymongo))
+              (uri (pypi-uri "pymongo" version))
+              (sha256
+               (base32
+                "1rijz4irjirjqb40qcg51bkhdrvzhnmmlgn5k5lh4mvbn6qlr7ak"))))))
+
+(define-public python-packaging-for-bigchaindb
+  (package
+    (inherit python-packaging)
+    (version "20.9")
+    (source
+     (origin
+       (inherit (package-source python-packaging))
+       (method url-fetch)
+       (uri (pypi-uri "packaging" version))
+       (patches '())
+       (sha256
+        (base32
+         "1rgadxvzvhac6wqa512bfj313ww6q3n18i9glzf67j0d6b0plcjv"))))
+    (arguments ;; FIXME run tests
+     `(#:tests? #f))))
+
+(define-public python-flask-for-bigchaindb
+  (package
+    (inherit python-flask)
+    (version "2.0.1")
+    (source (origin
+              (inherit (package-source python-flask))
+              (uri (pypi-uri "Flask" version))
+              (sha256
+               (base32
+                "0mcgwq7b4qd99mf5bsvs3wphchxarf8kgil4hwww3blj31xjak0w"))))
+    (propagated-inputs
+     `(("python-jinja2"
+        ,(package
+           (inherit python-jinja2)
+           (version "3.0.1")
+           (source
+            (origin
+              (inherit (package-source python-jinja2))
+              (uri (pypi-uri "Jinja2" version))
+              (sha256
+               (base32
+                "197ms1wimxql650245v63wkv04n8bicj549wfhp51bx68x5lhgvh"))))
+           (propagated-inputs
+            `(("python-markupsafe"
+               ,(package
+                  (inherit python-markupsafe)
+                  (version "2.0.1")
+                  (source
+                   (origin
+                     (inherit (package-source python-markupsafe))
+                     (uri (pypi-uri "MarkupSafe" version))
+                     (sha256
+                      (base32
+                       "02k2ynmqvvd0z0gakkf8s4idyb606r7zgga41jrkhqmigy06fk2r"))))))))))
+       ("python-itsdangerous"
+        ,(package
+           (inherit python-itsdangerous)
+           (version "2.0.1")
+           (source
+            (origin
+              (inherit (package-source python-itsdangerous))
+              (uri (pypi-uri "itsdangerous" version))
+              (sha256
+               (base32
+                "1w6gfb2zhbcmrfj6digwzw1z68w6zg1q87rm6la2m412zil4swly"))))))
+       ("python-werkzeug"
+        ,(package
+           (inherit python-werkzeug)
+           (version "2.0.1")
+           (source
+            (origin
+              (method url-fetch)
+              (uri (pypi-uri "Werkzeug" version))
+              (sha256
+               (base32
+                "0hlwawnn8c41f254qify5jnjj8xb97n294h09bqimzqhs0qdpq8x"))))
+           (arguments ;; FIXME run tests
+            `(#:tests? #f))))
+       ("python-click" ,python-click)))
+    (arguments ;; FIXME run tests
+     `(#:tests? #f))))
+
+(define-public python-flask-restful-for-bigchaindb
+  (package
+    (inherit python-flask-restful)
+    (version "0.3.9")
+    (source
+     (origin
+       (inherit (package-source python-flask-restful))
+       (uri (pypi-uri "Flask-RESTful" version))
+       (patches '())
+       (sha256
+        (base32
+         "0gm5dz088v3d2k1dkcp9b3nnqpkk0fp2jly870hijj2xhc5nbv6c"))))
+    (build-system python-build-system)))
+
+(define-public python-flask-cors-for-bigchaindb
+  (package
+    (inherit python-flask-cors)
+    (version "3.0.10")
+    (source (origin
+              (inherit (package-source python-flask-cors))
+              (uri (pypi-uri "Flask-Cors" version))
+              (sha256
+               (base32
+                "1pl16615fn1pc5n0vdrqlxm45mqsdjjxqv3gfkrs111v7wwkj25n"))))))
+
 (define-public bigchaindb
   (package
     (name "bigchaindb")
     (version "2.2.2")
     (source
      (origin
-       (method url-fetch)
-       (uri (pypi-uri "BigchainDB" version))
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/BigchainDB/bigchaindb/")
+             (commit "dependency-update"))) ;; (string-append "v" version)
+       (file-name (git-file-name name version))
        (sha256
-        (base32
-         "0r2xd0x9bph49zjbppiv6f9wjb9ahcki2imlh2cvdb3lnvn5j76f"))))
+        (base32 "1qzbhwnmf9iz1f57a4z8wpqkjsg4bjwv2mx6qgwdz27wxq8vzn4x"))))
     (build-system python-build-system)
     (arguments
      `(#:tests? #f)) ;; FIXME Tests
     (propagated-inputs
-     ;; NOTE pysha3 is python < 3.6 dependency
-     `(("python-aiohttp" ,python-aiohttp)
-       ("python-bigchaindb-abci" ,python-bigchaindb-abci)
+     `(("Python-aiohttp"          ,python-aiohttp)
+       ("python-bigchaindb-abci"  ,python-bigchaindb-abci)
        ("python-cryptoconditions" ,python-cryptoconditions)
-       ("python-flask" ,python-flask)
-       ("python-flask-cors" ,python-flask-cors)
-       ("python-flask-restful" ,python-flask-restful)
-       ("gunicorn" ,gunicorn)
-       ("python-jsonschema" ,python-jsonschema)
-       ("python-logstats" ,python-logstats)
-       ("python-packaging" ,python-packaging)
-       ("python-pymongo" ,python-pymongo)
-       ("python-pyyaml" ,python-pyyaml)
-       ("python-rapidjson" ,python-rapidjson)
-       ("python-requests" ,python-requests)
-       ("python-setproctitle" ,python-setproctitle)))
+       ("python-flask"            ,python-flask-for-bigchaindb)
+       ("python-flask-cors"       ,python-flask-cors-for-bigchaindb)
+       ("python-flask-restful"    ,python-flask-restful-for-bigchaindb)
+       ("gunicorn"                ,gunicorn)
+       ("python-jsonschema"       ,python-jsonschema)
+       ("python-logstats"         ,python-logstats)
+       ("python-packaging"        ,python-packaging-for-bigchaindb)
+       ("python-pymongo"          ,python-pymongo-for-bigchaindb)
+       ("python-pyyaml"           ,python-pyyaml-for-bigchaindb)
+       ("python-rapidjson"        ,python-rapidjson-for-bigchaindb)
+       ("python-requests"         ,python-requests-for-bigchaindb)
+       ("python-setproctitle"     ,python-setproctitle-for-bigchaindb)))
     (inputs
      `(("python-pytest-runner" ,python-pytest-runner)))
     (home-page "https://github.com/BigchainDB/bigchaindb/")
