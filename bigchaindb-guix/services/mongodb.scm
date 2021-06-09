@@ -98,39 +98,3 @@ storage:
                              (const %mongodb-accounts))))
    (default-value
      (mongodb-configuration))))
-
-;; (define select?
-;;   (match-lambda
-;;     (('guix  'config)   #f)
-;;     (('guix  rest ...)  #t)
-;;     (('gnu   rest ...)  #t)
-;;     (_ #f)))
-
-
-;; (with-imported-modules
-;;     `(((guix config) => ,(make-config.scm))
-;;       ,@(source-module-closure
-;;          '((gnu packages base))
-;;          #:select? (match-lambda
-;;                      (('guix  'config)   #f)
-;;                      (('guix  rest ...)  #t)
-;;                      (('gnu   rest ...)  #t)
-;;                      (_ #f))))
-;;   #~(pk 'hello))
-
-
-;; (with-store store
-;;   (let* ((exp (with-extensions (list guile-gcrypt)
-;;                 (with-imported-modules
-;;                     `(((guix config) => ,(make-config.scm))
-;;                       ,@(source-module-closure
-;;                          '((gnu packages base)) #:select? (match-lambda
-;;     (('guix  'config)   #f)
-;;     (('guix  rest ...)  #t)
-;;     (('gnu   rest ...)  #t)
-;;     (_ #f))))
-;;                   #~(pk 'hello))))
-;;          (drv (run-with-store store
-;;                 (mlet %store-monad ((drv (gexp->script "error" exp)))
-;;                   (return drv)))))
-;;     (build-derivations store (list drv))))
