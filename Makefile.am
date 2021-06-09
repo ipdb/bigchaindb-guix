@@ -56,6 +56,7 @@ SOURCES =						\
   bigchaindb-guix/deployment/tendermint-init.scm	\
   bigchaindb-guix/os/node.scm				\
   bigchaindb-guix/services/bigchaindb.scm		\
+  bigchaindb-guix/services/cloud-init.scm		\
   bigchaindb-guix/services/mongodb.scm			\
   bigchaindb-guix/packages/bigchaindb.scm		\
   bigchaindb-guix/packages/mongodb.scm			\
