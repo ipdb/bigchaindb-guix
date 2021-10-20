@@ -5,7 +5,7 @@
 ;;; Copyright © 2018, 2019, 2020 Efraim Flashner <efraim@flashner.co.il>
 ;;; Copyright © 2017–2020 Tobias Geerinckx-Rice <me@tobias.gr>
 ;;; Copyright © 2021 David Dashyan <mail@davie.li>
-(define-module (bigchaindb-guix packages mongodb)
+(define-module (bigchaindb-packages mongodb)
   #:use-module (gnu packages)
   #:use-module (gnu packages tls)
   #:use-module (gnu packages pcre)

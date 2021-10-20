@@ -58,10 +58,10 @@ SOURCES =						\
   bigchaindb-guix/services/bigchaindb.scm		\
   bigchaindb-guix/services/cloud-init.scm		\
   bigchaindb-guix/services/mongodb.scm			\
-  bigchaindb-guix/packages/bigchaindb.scm		\
-  bigchaindb-guix/packages/mongodb.scm			\
-  bigchaindb-guix/packages/rust.scm			\
-  bigchaindb-guix/packages/tendermint.scm
+  bigchaindb-packages/bigchaindb.scm			\
+  bigchaindb-packages/mongodb.scm			\
+  bigchaindb-packages/rust.scm				\
+  bigchaindb-packages/tendermint.scm
 
 TESTS =						\
   tests/services.scm				\

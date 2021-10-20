@@ -24,7 +24,7 @@
 ;;      src/github.com/fortytw2/leaktest/leaktest_test.go:19:11: missing ...
 ;;      in args forwarded to printf-like function
 
-(define-module (bigchaindb-guix packages tendermint)
+(define-module (bigchaindb-packages tendermint)
   #:use-module (gnu packages compression)
   #:use-module (gnu packages golang)
   #:use-module (gnu packages)

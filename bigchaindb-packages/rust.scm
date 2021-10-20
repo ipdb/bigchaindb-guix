@@ -15,7 +15,7 @@
 ;;
 ;; You should have received a copy of the GNU General Public License
 ;; along with bigchaindb-guix.  If not, see <http://www.gnu.org/licenses/>.
-(define-module (bigchaindb-guix packages rust)
+(define-module (bigchaindb-packages rust)
   #:use-module ((guix licenses) #:prefix license:)
   #:use-module (gnu packages python)
   #:use-module (gnu packages rust)
