@@ -60,7 +60,6 @@ SOURCES =						\
   bigchaindb-guix/services/mongodb.scm			\
   bigchaindb-packages/bigchaindb.scm			\
   bigchaindb-packages/mongodb.scm			\
-  bigchaindb-packages/rust.scm				\
   bigchaindb-packages/tendermint.scm
 
 TESTS =						\
