@@ -544,7 +544,48 @@ from your child processes as well!")
         (base32 "0apx3dpw0ayw6k3v2c80vmkiribmfwl47s94cc30fk4hkg3vrns0"))))
     (build-system python-build-system)
     (arguments
-     `(#:tests? #f)) ;; FIXME Tests
+     `(#:phases
+       (modify-phases %standard-phases
+         (add-after 'unpack 'disable-failing-tests
+           ;; Tests fail becaus most of them require tendermint and
+           ;; mongodb running
+           (lambda _
+             (for-each delete-file
+                       ;; FIXME some of these files are only partially
+                       ;; failing
+                       '("tests/test_core.py"
+                         "tests/test_docs.py"
+                         "tests/test_parallel_validation.py"
+                         "tests/test_txlist.py"
+                         "tests/assets/test_digital_assets.py"
+                         "tests/assets/test_divisible_assets.py"
+                         "tests/backend/localmongodb/test_connection.py"
+                         "tests/backend/localmongodb/test_queries.py"
+                         "tests/backend/localmongodb/test_schema.py"
+                         "tests/commands/test_commands.py"
+                         "tests/common/test_memoize.py"
+                         "tests/common/test_transaction.py"
+                         "tests/db/test_bigchain_api.py"
+                         "tests/elections/test_election.py"
+                         "tests/migrations/test_migration_election.py"
+                         "tests/tendermint/test_core.py"
+                         "tests/tendermint/test_fastquery.py"
+                         "tests/tendermint/test_integration.py"
+                         "tests/tendermint/test_lib.py"
+                         "tests/upsert_validator/test_upsert_validator_vote.py"
+                         "tests/upsert_validator/test_validator_election.py"
+                         "tests/web/test_assets.py"
+                         "tests/web/test_block_tendermint.py"
+                         "tests/web/test_blocks.py"
+                         "tests/web/test_content_type_middleware.py"
+                         "tests/web/test_metadata.py"
+                         "tests/web/test_outputs.py"
+                         "tests/web/test_transactions.py"
+                         "tests/web/test_validators.py"))
+             #t))
+         (replace 'check
+           (lambda _
+             (invoke "pytest"))))))
     (propagated-inputs
      `(("python-aiohttp"          ,python-aiohttp)
        ("python-bigchaindb-abci"  ,python-bigchaindb-abci)
