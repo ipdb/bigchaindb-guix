@@ -33,10 +33,11 @@
   #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages protobuf)
   #:use-module (gnu packages python-build)
+  #:use-module (gnu packages python-check)
   #:use-module (gnu packages python-crypto)
   #:use-module (gnu packages python-web)
   #:use-module (gnu packages python-xyz)
-  ;; #:use-module (gnu packages rust)
+  #:use-module (gnu packages sphinx)
   #:use-module (gnu packages ssh)
   #:use-module (gnu packages texinfo)
   #:use-module (gnu packages time)
@@ -452,6 +453,82 @@ from your child processes as well!")
                (base32
                 "1pl16615fn1pc5n0vdrqlxm45mqsdjjxqv3gfkrs111v7wwkj25n"))))))
 
+(define-public python-sphinxcontrib-httpdomain
+  (package
+    (name "python-sphinxcontrib-httpdomain")
+    (version "1.8.0")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "sphinxcontrib-httpdomain" version))
+       (sha256
+        (base32 "1igfbgrs19kql3dzsfxh7dymm4ghjanzzj2w8p1zra6cs2mwyn90"))))
+    (build-system python-build-system)
+    (arguments
+     `(#:tests? #f))
+    (propagated-inputs
+     `(("python-six" ,python-six) ("python-sphinx" ,python-sphinx)))
+    (home-page "https://github.com/sphinx-contrib/httpdomain")
+    (synopsis "Sphinx domain for documenting HTTP APIs")
+    (description "Sphinx domain for documenting HTTP APIs")
+    (license license:bsd-3)))
+
+(define-public python-pockets
+  (package
+    (name "python-pockets")
+    (version "0.9.1")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "pockets" version))
+       (sha256
+        (base32 "1cwjgsghxr0qsvl5l0j90bbkqdgkpj1z4wdmwczi7agpqsiz284k"))))
+    (build-system python-build-system)
+    (propagated-inputs `(("python-six" ,python-six)))
+    (home-page "http://pockets.readthedocs.org")
+    (synopsis "A collection of helpful Python tools!")
+    (description "A collection of helpful Python tools!")
+    (license license:bsd-3)))
+
+(define-public python-sphinxcontrib-napoleon
+  (package
+    (name "python-sphinxcontrib-napoleon")
+    (version "0.7")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "sphinxcontrib-napoleon" version))
+       (sha256
+        (base32 "1y7wrfml0pw6mhqs5qd10j9735fsmzbglhrhgwnryvirxnz84ws0"))))
+    (build-system python-build-system)
+    (arguments
+     `(#:tests? #f))
+    (propagated-inputs
+     `(("python-pockets" ,python-pockets)
+       ("python-six" ,python-six)))
+    (home-page "https://sphinxcontrib-napoleon.readthedocs.io")
+    (synopsis "Sphinx \"napoleon\" extension.")
+    (description "Sphinx \"napoleon\" extension.")
+    (license license:bsd-3)))
+
+(define-public python-aafigure
+  (package
+    (name "python-aafigure")
+    (version "0.6")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (pypi-uri "aafigure" version))
+       (sha256
+        (base32 "07ly5n68i15rv02crxkzrisz9xmkf0k6lf61pbziz72p5gyw3wj9"))))
+    (build-system python-build-system)
+    (arguments
+     `(#:tests? #f))
+    (home-page "http://launchpad.net/aafigure")
+    (synopsis "ASCII art to image converter")
+    (description "ASCII art to image converter")
+    (license license:bsd-3)))
+
 (define-public bigchaindb
   (package
     (name "bigchaindb")
@@ -484,8 +561,28 @@ from your child processes as well!")
        ("python-rapidjson"        ,python-rapidjson-for-bigchaindb)
        ("python-requests"         ,python-requests-for-bigchaindb)
        ("python-setproctitle"     ,python-setproctitle-for-bigchaindb)))
-    (inputs
-     `(("python-pytest-runner" ,python-pytest-runner)))
+    (native-inputs
+     `(("python-pytest-runner" ,python-pytest-runner)
+       ("python-pep8" ,python-pep8)
+       ("python-flake8" ,python-flake8)
+       ("python-flake8-quotes" ,python-flake8-quotes)
+       ("python-hypothesis" ,python-hypothesis)
+       ("python-pytest" ,python-pytest)
+       ("python-pytest-cov" ,python-pytest-cov)
+       ("python-pytest-mock" ,python-pytest-mock)
+       ("python-pytest-xdist" ,python-pytest-xdist)
+       ("python-pytest-flask" ,python-pytest-flask)
+       ("python-pytest-aiohttp" ,python-pytest-aiohttp)
+       ("pytest-asyncio" ,python-pytest-asyncio)
+       ("python-tox" ,python-tox)
+       ;; docs_require
+       ("python-sphinx" ,python-sphinx)
+       ("python-recommonmark" ,python-recommonmark)
+       ("python-sphinx-rtd-theme" ,python-sphinx-rtd-theme)
+       ("python-sphinxcontrib-httpdomain" ,python-sphinxcontrib-httpdomain)
+       ("python-sphinxcontrib-napoleon" ,python-sphinxcontrib-napoleon)
+       ("python-aafigure" ,python-aafigure)
+       ("python-wget" ,python-wget)))
     (home-page "https://github.com/BigchainDB/bigchaindb/")
     (synopsis "BigchainDB: The Blockchain Database")
     (description "BigchainDB: The Blockchain Database")
