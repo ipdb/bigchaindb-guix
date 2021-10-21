@@ -1,5 +1,5 @@
 (define-module (bigchaindb-guix services mongodb)
-  #:use-module (bigchaindb-packages mongodb)
+  #:use-module (bigchaindb-guix packages mongodb)
   #:use-module (gnu services)
   #:use-module (gnu services shepherd)
   #:use-module (gnu system shadow)

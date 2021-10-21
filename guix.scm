@@ -26,7 +26,7 @@
              (srfi srfi-1))
 
 (set! %load-path (cons (current-source-directory) %load-path))
-(use-modules (bigchaindb-packages bigchaindb))
+(use-modules (bigchaindb-guix packages bigchaindb))
 
 (define %srcdir
   (current-source-directory))

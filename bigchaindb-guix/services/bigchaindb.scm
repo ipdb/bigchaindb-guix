@@ -27,9 +27,8 @@
   #:use-module (guix records)
   #:use-module (guix gexp)
   #:use-module (guix build utils)
-  #:use-module (bigchaindb-packages bigchaindb)
-  #:use-module (bigchaindb-packages tendermint)
-  #:use-module (bigchaindb-guix deployment tendermint-init)
+  #:use-module (bigchaindb-guix packages bigchaindb)
+  #:use-module (bigchaindb-guix packages tendermint)
   #:use-module (ice-9 match)
   #:use-module (json)
   ;; NOTE clean unused start
