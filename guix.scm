@@ -57,17 +57,6 @@
                        #:recursive? #t
                        #:select? keep-file?))
     (build-system gnu-build-system)
-    (arguments
-     '(#:phases
-       (modify-phases %standard-phases
-         (add-after 'check 'pathch-load-extension-dirs
-           (lambda* (#:key outputs #:allow-other-keys)
-             (substitute* "bigchaindb-guix/deployment/tendermint-init.scm"
-               (("libtendermintinit")
-                (format #f
-                        "~a/lib/guile/3.0/extensions/libtendermintinit"
-                        (assoc-ref outputs "out"))))
-             #t)))))
     (native-inputs
      `(("autoconf" ,autoconf)
        ("automake" ,automake)

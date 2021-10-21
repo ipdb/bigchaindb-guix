@@ -496,8 +496,7 @@
   (private tm-keypair-private)
   (public tm-keypair-public))
 
-;; FIXME Doesnt work see tendermint-init module workarround
-(define (generate-tm-keypair-gcrypt)
+(define (generate-tm-keypair)
   "Returns <tm-keypair>. Which is basically a ed25519 keypair with fields
 encoded with base64, but private keys have public key as suffix \"to make
 multiple signing operations with the same key more efficient\"."
@@ -520,18 +519,6 @@ multiple signing operations with the same key more efficient\"."
            (map base64-encode
                 (list (concatenate-bytevectors (list private public))
                       public)))))
-
-(define (generate-tm-keypair)
-  (define (concatenate-bytevectors bytevectors-list)
-    (call-with-values open-bytevector-output-port
-      (lambda (port get-bytevector)
-        (for-each (lambda (x) (put-bytevector port x)) bytevectors-list)
-        (get-bytevector))))
-
-  (match-let ((('tendermint-ed25519-key ('pubkey private) ('privkey public))
-               (tendermint-ed25519-genkey)))
-    (apply make-tm-keypair
-           (map base64-encode (list private public)))))
 
 (define (generate-tm-node-key-json pair)
   "Make tendermint node_key.json configuration"

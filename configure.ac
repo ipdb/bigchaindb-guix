@@ -23,15 +23,6 @@ AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([pre-inst-env:build-aux/pre-inst-env.in],
         [chmod +x pre-inst-env])
 
-AC_CONFIG_HEADER([extensions/config.h])
-AC_CONFIG_FILES([extensions/Makefile])
-
-AC_CHECK_HEADERS([sodium.h])
-
-AC_PROG_CC
-AM_PROG_AR
-LT_INIT
-
 GUILE_CFLAGS=`guile-config compile`
 GUILE_LIBS=`guile-config link`
 AC_SUBST(GUILE_CFLAGS)

@@ -53,7 +53,6 @@ clean-go:
 ## Dist
 
 SOURCES =						\
-  bigchaindb-guix/deployment/tendermint-init.scm	\
   bigchaindb-guix/os/node.scm				\
   bigchaindb-guix/services/bigchaindb.scm		\
   bigchaindb-guix/services/cloud-init.scm		\
@@ -97,5 +96,3 @@ EXTRA_DIST =					\
   guix.scm					\
   m4/guile.m4					\
   system.scm
-
-SUBDIRS = extensions
