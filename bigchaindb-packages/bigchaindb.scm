@@ -464,7 +464,7 @@ from your child processes as well!")
              (commit "dependency-update"))) ;; (string-append "v" version)
        (file-name (git-file-name name version))
        (sha256
-        (base32 "1qzbhwnmf9iz1f57a4z8wpqkjsg4bjwv2mx6qgwdz27wxq8vzn4x"))))
+        (base32 "0apx3dpw0ayw6k3v2c80vmkiribmfwl47s94cc30fk4hkg3vrns0"))))
     (build-system python-build-system)
     (arguments
      `(#:tests? #f)) ;; FIXME Tests
