@@ -4,8 +4,6 @@ aclocal.m4
 autom4te.cache/
 configure
 
-build-aux/ar-lib
-build-aux/compile
 build-aux/config.guess
 build-aux/config.sub
 build-aux/depcomp
@@ -14,18 +12,6 @@ build-aux/ltmain.sh
 build-aux/missing
 
 *.deps
-*config.h*
-*stamp-h1
-
-extensions/*.la
-extensions/*.lo
-extensions/*.o
-extensions/.libs
-
-libtool
-
-m4/libtool.m4
-m4/lt*.m4
 
 Makefile
 config.log
