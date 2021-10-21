@@ -469,7 +469,7 @@ from your child processes as well!")
     (arguments
      `(#:tests? #f)) ;; FIXME Tests
     (propagated-inputs
-     `(("Python-aiohttp"          ,python-aiohttp)
+     `(("python-aiohttp"          ,python-aiohttp)
        ("python-bigchaindb-abci"  ,python-bigchaindb-abci)
        ("python-cryptoconditions" ,python-cryptoconditions)
        ("python-flask"            ,python-flask-for-bigchaindb)
